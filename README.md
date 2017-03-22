@@ -164,8 +164,7 @@ If you use this work, please cite any of the following publications:
                Frank Dellaert},
   title     = {Distributed Trajectory Estimation with Privacy and Communication Constraints: 
 a Two-Stage Distributed Gauss-Seidel Approach},
-  booktitle = {{IEEE} International Conference on Robotics and Automation, {ICRA}
-               2016},
+  booktitle = {IEEE International Conference on Robotics and Automation 2016},
   year      = {2016}
 }
 ```
