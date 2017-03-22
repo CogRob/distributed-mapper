@@ -1,0 +1,14 @@
+*_optimized.g2o
+*.user*
+*.swp
+results/
+build
+.cproject
+.project
+data/example_2robots/fullGraph.g2o
+data/example_4robots/fullGraph.g2o
+data/example_9robots/fullGraph.g2o
+data/example_16robots/fullGraph.g2o
+data/example_25robots/fullGraph.g2o
+data/example_36robots/fullGraph.g2o
+data/example_49robots/fullGraph.g2o
