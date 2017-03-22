@@ -191,12 +191,10 @@ License
 
 Distributed-Mapper is released under the BSD license, reproduced in the file LICENSE in this directory.
 
-<br><br>
-
 ![IRIM](imgs/irim.jpg)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![LIDS](imgs/mit_logo.png?raw=true "LIDS")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-![ARL](imgs/ARL_logo.png?raw=true =10x "ARL")
+![ARL](imgs/ARL_logo.png?raw=true "ARL")
