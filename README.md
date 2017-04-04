@@ -4,8 +4,8 @@ This library is an implementation of the algorithm described in Distributed Traj
 a Two-Stage Distributed Gauss-Seidel Approach. The core library is developed in C++
 language.
 
-Distributed-Mapper is developed by [Siddharth Choudhary](mailto:siddharth.choudhary@gatech.edu), 
-[Luca Carlone](mailto:lcarlone@mit.edu), [Carlos Nieto](mailto:carlos.nieto@gmail.com) and [John Rogers](mailto:john.g.rogers59.civ@mail.mil) as part of the collaboration between Georgia Tech, MIT and Army Research Lab. 
+Distributed-Mapper is developed by [Siddharth Choudhary](http://www.cc.gatech.edu/~choudhar/), 
+[Luca Carlone](http://www.lucacarlone.com/), [Carlos Nieto](https://scholar.google.com/citations?user=p3S78jsAAAAJ&hl=en) and [John Rogers](https://scholar.google.com/citations?user=uH_LDocAAAAJ&hl=en) as part of the collaboration between Georgia Tech, MIT and Army Research Lab. 
 
 Prerequisites
 ------
@@ -188,15 +188,11 @@ a Two-Stage Distributed Gauss-Seidel Approach},
 
 License
 -----
-
 Distributed-Mapper is released under the BSD license, reproduced in the file LICENSE in this directory.
 
 <br><br>
-
 ![IRIM](imgs/irim.jpg)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![LIDS](imgs/mit_logo.png?raw=true "LIDS")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-![ARL](imgs/ARL_logo.png?raw=true =10x "ARL")
+![ARL](imgs/ARL_logo.png?raw=true "ARL")
