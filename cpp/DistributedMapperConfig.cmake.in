@@ -10,6 +10,12 @@ FIND_LIBRARY(DistributedMapper_LIBRARY distributed-mapper
 )
 SET(DistributedMapper_LIBRARIES ${DistributedMapper_LIBRARY})
 
+FIND_LIBRARY(DistributedMapperStatic_LIBRARY distributed-mapper-static
+    PATHS @CMAKE_INSTALL_PREFIX@/lib
+    NO_DEFAULT_PATH
+)
+SET(DistributedMapperStatic_LIBRARIES ${DistributedMapperStatic_LIBRARY})
+
 # Find and set the include dirs
 SET(DistributedMapper_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include/distributed_mapper")
 SET(DistributedMapper_INCLUDE_DIRS ${DistributedMapper_INCLUDE_DIR})

@@ -15,8 +15,8 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace multiRobotUtil;
-
+using namespace distributed_mapper;
+using namespace multirobot_util;
 
 noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Variance(12, 1);
 

@@ -19,6 +19,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/graph.h>
 
+namespace distributed_mapper{
+
 
 // Static Consts
 static const gtsam::Matrix I9 = gtsam::eye(9);
@@ -171,7 +173,7 @@ class DistributedMapper{
       else{
         initial_.insert(key, pose);
       }
-      linearizedRotation_ = multiRobotUtil::rowMajorVectorValues(initial_);
+      linearizedRotation_ = multirobot_util::rowMajorVectorValues(initial_);
     }
 
     /**removePrior
@@ -218,7 +220,7 @@ class DistributedMapper{
         neighbors_.insert(key, pose);
         neighborsLinearizedPoses_.insert(key, gtsam::zero(6));
         gtsam::Matrix3 R = pose.rotation().matrix();
-        gtsam::Vector r = multiRobotUtil::rowMajorVector(R);
+        gtsam::Vector r = multirobot_util::rowMajorVector(R);
         neighborsLinearizedRotations_.insert(key, r);
       }
     }
@@ -261,7 +263,7 @@ class DistributedMapper{
 
     /** @brief retractPose3Global performs global retraction using linearizedPoses and initial */
     void retractPose3Global(){
-      initial_ = multiRobotUtil::retractPose3Global(initial_, linearizedPoses_);
+      initial_ = multirobot_util::retractPose3Global(initial_, linearizedPoses_);
     }
 
     /** @brief linearizedRotationAt returns the current rotation estimate at sym */
@@ -274,8 +276,8 @@ class DistributedMapper{
     /** @brief convertLinearizedRotationToPoses iterates over linearized rotations and convert them to poses with zero translation  */
     void convertLinearizedRotationToPoses(){
       gtsam::Values rotValue = gtsam::InitializePose3::normalizeRelaxedRotations(linearizedRotation_);
-      initial_ = multiRobotUtil::pose3WithZeroTranslation(rotValue);
-      linearizedPoses_ = multiRobotUtil::initializeVectorValues(initial_); // Init linearized poses
+      initial_ = multirobot_util::pose3WithZeroTranslation(rotValue);
+      linearizedPoses_ = multirobot_util::initializeVectorValues(initial_); // Init linearized poses
       distGFG_ = *(chordalGraph_.linearize(initial_));
 
       // Initial error
@@ -484,3 +486,4 @@ class DistributedMapper{
     Verbosity verbosity_; // Verbosity level
 };
 
+}

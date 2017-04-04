@@ -26,9 +26,12 @@ message("Boost Libraries: ${Boost_LIBRARIES}")
 file(GLOB srcs "src/*.cpp" "src/*.h")
 include_directories(src)
 add_library (distributed-mapper SHARED ${srcs} ${GTSAM_LIBRARIES})
+add_library (distributed-mapper-static STATIC ${srcs} ${GTSAM_LIBRARIES})
 target_link_libraries(distributed-mapper ${Boost_LIBRARIES} gtsam)
+target_link_libraries(distributed-mapper-static ${Boost_LIBRARIES} gtsam)
 export(PACKAGE DistributedMapper)
 install(TARGETS distributed-mapper DESTINATION lib)
+install(TARGETS distributed-mapper-static DESTINATION lib)
 
 ###########################################################################
 # Add executable

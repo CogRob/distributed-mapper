@@ -18,7 +18,8 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace multiRobotUtil;
+using namespace distributed_mapper;
+using namespace multirobot_util;
 
 /**
  * @brief readFullGraph reads the full graph if it is present in the directory, otherwise creates it
@@ -262,7 +263,7 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////////////////////////////////////
     // Chordal Graph
     ////////////////////////////////////////////////////////////////////////////////
-    NonlinearFactorGraph chordalGraph = convertToChordalGraph(fullGraph, model, useBetweenNoise);
+    NonlinearFactorGraph chordalGraph = distributed_mapper::multirobot_util::convertToChordalGraph(fullGraph, model, useBetweenNoise);
 
     ////////////////////////////////////////////////////////////////////////////////
     // Initial Error
@@ -272,13 +273,13 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////////////////////////////////////
     // Centralized Two Stage
     ////////////////////////////////////////////////////////////////////////////////
-    Values centralized = centralizedEstimation(fullGraphWithPrior, model, priorModel, useBetweenNoise);
+    Values centralized = distributed_mapper::multirobot_util::centralizedEstimation(fullGraphWithPrior, model, priorModel, useBetweenNoise);
     std::cout << "Centralized Two Stage Error: " << chordalGraph.error(centralized) << std::endl;
 
     ////////////////////////////////////////////////////////////////////////////////
     // Centralized Two Stage + Gauss Newton
     ////////////////////////////////////////////////////////////////////////////////
-    Values chordalGN = centralizedGNEstimation(fullGraphWithPrior, model, priorModel, useBetweenNoise);
+    Values chordalGN = distributed_mapper::multirobot_util::centralizedGNEstimation(fullGraphWithPrior, model, priorModel, useBetweenNoise);
     std::cout << "Centralized Two Stage + GN Error: " << chordalGraph.error(chordalGN) << std::endl;
 
     ////////////////////////////////////////////////////////////////////////////////

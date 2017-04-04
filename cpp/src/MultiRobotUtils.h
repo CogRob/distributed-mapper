@@ -14,6 +14,9 @@
 #include <gtsam/inference/Symbol.h>
 #include <boost/lexical_cast.hpp>
 
+namespace distributed_mapper{
+
+
 // MACRO for comparing centralized and distributed solution
 #define COMPARE_CENTRALIZED_DISTRIBUTED_VECTORVALUES(nrRobots, centralized, distributed, tol) \
 { \
@@ -60,7 +63,7 @@
 /**
  * Multi-Robot utility functions
  */
-namespace multiRobotUtil{
+namespace multirobot_util{
 
 
   /**
@@ -156,4 +159,4 @@ namespace multiRobotUtil{
   gtsam::SharedDiagonal convertToDiagonalNoise(gtsam::SharedNoiseModel noise);
   }
 
-
+}

@@ -4,7 +4,7 @@
 using namespace std;
 using namespace gtsam;
 
-
+namespace distributed_mapper{
 //*****************************************************************************
 pair<NonlinearFactorGraph, vector<size_t> >
 DistributedMapper::createSubgraphInnerAndSepEdges(const NonlinearFactorGraph& subgraph){
@@ -53,8 +53,8 @@ DistributedMapper::createSubgraphInnerAndSepEdges(const NonlinearFactorGraph& su
   }
 
   // Convert neighbor values into row major vector values
-  neighborsLinearizedRotations_ = multiRobotUtil::rowMajorVectorValues(neighbors_);
-  neighborsLinearizedPoses_ = multiRobotUtil::initializeVectorValues(neighbors_);
+  neighborsLinearizedRotations_ = multirobot_util::rowMajorVectorValues(neighbors_);
+  neighborsLinearizedPoses_ = multirobot_util::initializeVectorValues(neighbors_);
 
   return make_pair(subgraphInnerEdge,subgraphsSepEdgesId);
 }
@@ -66,7 +66,7 @@ DistributedMapper::loadSubgraphAndCreateSubgraphEdge(GraphAndValues graphAndValu
   initial_ = *(graphAndValues.second);    
 
   // Convert initial values into row major vector values
-  linearizedRotation_ = multiRobotUtil::rowMajorVectorValues(initial_);
+  linearizedRotation_ = multirobot_util::rowMajorVectorValues(initial_);
 
   // create a nonlinear factor graph with inner edges and store slots of separators
   pair<NonlinearFactorGraph, vector<size_t> > subGraphEdge = createSubgraphInnerAndSepEdges(graph_);
@@ -83,7 +83,7 @@ void
 DistributedMapper::createLinearOrientationGraph(){
   // Preallocate
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(innerEdges_);
-  rotSubgraph_ = multiRobotUtil::buildLinearOrientationGraph(pose3Graph, useBetweenNoise_);
+  rotSubgraph_ = multirobot_util::buildLinearOrientationGraph(pose3Graph, useBetweenNoise_);
 }
 
 
@@ -125,7 +125,7 @@ DistributedMapper::estimateRotation(){
     // if using between noise, use the factor noise model converted to a conservative diagonal estimate
     SharedDiagonal model = rotationNoiseModel_;
     if(useBetweenNoise_){
-        model = multiRobotUtil::convertToDiagonalNoise(pose3Between->get_noiseModel());
+        model = multirobot_util::convertToDiagonalNoise(pose3Between->get_noiseModel());
       }
 
     if(robot0 == robotName_){ // robot i owns the first key
@@ -176,7 +176,7 @@ DistributedMapper::chordalFactorGraph(){
           Pose3 measured = factor->measured();
           if(useBetweenNoise_){
               // Convert noise model to chordal factor noise
-              SharedNoiseModel chordalNoise = multiRobotUtil::convertToChordalNoise(factor->get_noiseModel());
+              SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
               //chordalNoise->print("Chordal Noise: \n");
               chordalGraph_.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
             }
@@ -237,7 +237,7 @@ DistributedMapper::estimatePoses(){
             Vector b = -(M1 * neighborsLinearizedPoses_.at(key1) + error);
             if(useBetweenNoise_){
                 Rot3 rotation = initial_.at<Pose3>(key0).rotation();
-                SharedNoiseModel chordalNoise = multiRobotUtil::convertToChordalNoise(pose3Between->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(pose3Between->get_noiseModel(), rotation.matrix());
                 chordalNoise->WhitenSystem(A, b);
               }
             distGFG.add(key0, A, b, poseNoiseModel_);
@@ -251,7 +251,7 @@ DistributedMapper::estimatePoses(){
             Vector b = -(M0 * neighborsLinearizedPoses_.at(key0) + error);
             if(useBetweenNoise_){
                 Rot3 rotation = neighbors_.at<Pose3>(key0).rotation();
-                SharedNoiseModel chordalNoise = multiRobotUtil::convertToChordalNoise(pose3Between->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(pose3Between->get_noiseModel(), rotation.matrix());
                 chordalNoise->WhitenSystem(A, b);
               }
             distGFG.add(key1, A, b, poseNoiseModel_);
@@ -301,3 +301,4 @@ void DistributedMapper::optimize(){
   retractPose3Global();
 }
 
+}

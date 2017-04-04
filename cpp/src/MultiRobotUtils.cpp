@@ -3,18 +3,20 @@
 using namespace std;
 using namespace gtsam;
 
+namespace distributed_mapper{
+
 static const Matrix I9 = eye(9);
 static const Vector zero9 = Vector::Zero(9);
 static const Matrix zero33= Matrix::Zero(3,3);
 static const Key keyAnchor = symbol('Z', 9999999);
 
 //*****************************************************************************
-Vector multiRobotUtil::rowMajorVector(Matrix3 R){
+Vector multirobot_util::rowMajorVector(Matrix3 R){
     return (Vector(9) << R(0,0), R(0,1), R(0,2),/*  */ R(1,0), R(1,1), R(1,2), /*  */ R(2,0), R(2,1), R(2,2)).finished();
 }
 
 //*****************************************************************************
-void multiRobotUtil::printKeys(Values values){
+void multirobot_util::printKeys(Values values){
     cout << "Keys: ";
     for(const Values::ConstKeyValuePair& key_value: values){
         Key key = key_value.key;
@@ -24,7 +26,7 @@ void multiRobotUtil::printKeys(Values values){
 }
 
 //*****************************************************************************
-void multiRobotUtil::printKeys(NonlinearFactorGraph graph){
+void multirobot_util::printKeys(NonlinearFactorGraph graph){
     cout << "Factor Keys: ";
     for(size_t k=0; k< graph.size(); k++){
         KeyVector keys = graph.at(k)->keys();
@@ -37,7 +39,7 @@ void multiRobotUtil::printKeys(NonlinearFactorGraph graph){
 }
 
 //*****************************************************************************
-Values multiRobotUtil::pose3WithZeroTranslation(Values rotations){
+Values multirobot_util::pose3WithZeroTranslation(Values rotations){
     Values poses;
     for(const Values::ConstKeyValuePair& key_value: rotations){
         Key key = key_value.key;
@@ -48,7 +50,7 @@ Values multiRobotUtil::pose3WithZeroTranslation(Values rotations){
 }
 
 //*****************************************************************************
-VectorValues multiRobotUtil::initializeVectorValues(Values rotations){
+VectorValues multirobot_util::initializeVectorValues(Values rotations){
     VectorValues vectorValues;
     for(const Values::ConstKeyValuePair& key_value: rotations){
         Key key = key_value.key;
@@ -59,7 +61,7 @@ VectorValues multiRobotUtil::initializeVectorValues(Values rotations){
 
 //*****************************************************************************
 VectorValues
-multiRobotUtil::initializeZeroRotation(Values subInitials){
+multirobot_util::initializeZeroRotation(Values subInitials){
     VectorValues subInitialsVectorValue;
     for(const Values::ConstKeyValuePair& key_value: subInitials) {
         Vector r = zero(9);
@@ -72,7 +74,7 @@ multiRobotUtil::initializeZeroRotation(Values subInitials){
 
 //*****************************************************************************
 VectorValues
-multiRobotUtil::rowMajorVectorValues(Values subInitials){
+multirobot_util::rowMajorVectorValues(Values subInitials){
     VectorValues subInitialsVectorValue;
     for(const Values::ConstKeyValuePair& key_value: subInitials) {
         Pose3 pose = subInitials.at<Pose3>(key_value.key);
@@ -84,7 +86,7 @@ multiRobotUtil::rowMajorVectorValues(Values subInitials){
 }
 
 //*****************************************************************************
-Values multiRobotUtil::retractPose3Global(Values initial, VectorValues delta){
+Values multirobot_util::retractPose3Global(Values initial, VectorValues delta){
     Values estimate;
     for(const Values::ConstKeyValuePair& key_value: initial){
         Key key = key_value.key;
@@ -98,7 +100,7 @@ Values multiRobotUtil::retractPose3Global(Values initial, VectorValues delta){
 
 //*****************************************************************************
 pair <vector<NonlinearFactorGraph>, vector<Values> >
-multiRobotUtil::loadSubgraphs(size_t numSubgraphs, string dataPath){
+multirobot_util::loadSubgraphs(size_t numSubgraphs, string dataPath){
     vector<NonlinearFactorGraph> subGraphs;
     vector<Values> subInitials;
 
@@ -116,7 +118,7 @@ multiRobotUtil::loadSubgraphs(size_t numSubgraphs, string dataPath){
 
 //*****************************************************************************
 pair<NonlinearFactorGraph, Values>
-multiRobotUtil::loadGraphWithPrior(string dataFile, const SharedNoiseModel& priorModel){
+multirobot_util::loadGraphWithPrior(string dataFile, const SharedNoiseModel& priorModel){
 
     GraphAndValues graphAndValues = readG2o(dataFile, true);
     NonlinearFactorGraph graphCentralized = *(graphAndValues.first);
@@ -132,7 +134,7 @@ multiRobotUtil::loadGraphWithPrior(string dataFile, const SharedNoiseModel& prio
 //*****************************************************************************
 
 NonlinearFactorGraph
-multiRobotUtil::convertToChordalGraph(NonlinearFactorGraph graph,
+multirobot_util::convertToChordalGraph(NonlinearFactorGraph graph,
                                       const SharedNoiseModel& betweenNoise,
                                       bool useBetweenNoise){
     NonlinearFactorGraph cenFG;
@@ -146,7 +148,7 @@ multiRobotUtil::convertToChordalGraph(NonlinearFactorGraph graph,
 
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
-                SharedNoiseModel chordalNoise = multiRobotUtil::convertToChordalNoise(factor->get_noiseModel());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
             }
             else{
@@ -160,7 +162,7 @@ multiRobotUtil::convertToChordalGraph(NonlinearFactorGraph graph,
 
 /* ************************************************************************* */
 GaussianFactorGraph
-multiRobotUtil::buildLinearOrientationGraph(const NonlinearFactorGraph& g, bool useBetweenNoise) {
+multirobot_util::buildLinearOrientationGraph(const NonlinearFactorGraph& g, bool useBetweenNoise) {
 
     GaussianFactorGraph linearGraph;
     SharedDiagonal model = noiseModel::Unit::Create(9);
@@ -197,7 +199,7 @@ multiRobotUtil::buildLinearOrientationGraph(const NonlinearFactorGraph& g, bool 
 
 //*****************************************************************************
 Values
-multiRobotUtil::centralizedEstimation(NonlinearFactorGraph graph,
+multirobot_util::centralizedEstimation(NonlinearFactorGraph graph,
                                       const SharedNoiseModel& betweenNoise,
                                       const SharedNoiseModel& priorNoise,
                                       bool useBetweenNoise){
@@ -225,7 +227,7 @@ multiRobotUtil::centralizedEstimation(NonlinearFactorGraph graph,
 
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
-                SharedNoiseModel chordalNoise = multiRobotUtil::convertToChordalNoise(factor->get_noiseModel());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
             }
             else{
@@ -254,7 +256,7 @@ multiRobotUtil::centralizedEstimation(NonlinearFactorGraph graph,
 
 //*****************************************************************************
 Values
-multiRobotUtil::centralizedGNEstimation(NonlinearFactorGraph graph,
+multirobot_util::centralizedGNEstimation(NonlinearFactorGraph graph,
                                         const SharedNoiseModel& betweenNoise,
                                         const SharedNoiseModel& priorNoise,
                                         bool useBetweenNoise){
@@ -283,7 +285,7 @@ multiRobotUtil::centralizedGNEstimation(NonlinearFactorGraph graph,
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
                 Rot3 rotation = cenRot.at<Rot3>(key1);
-                SharedNoiseModel chordalNoise = multiRobotUtil::convertToChordalNoise(factor->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel(), rotation.matrix());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
             }
             else{
@@ -315,7 +317,7 @@ multiRobotUtil::centralizedGNEstimation(NonlinearFactorGraph graph,
 
 
 //*****************************************************************************
-SharedNoiseModel multiRobotUtil::convertToChordalNoise(SharedNoiseModel noise, Matrix Rhat){
+SharedNoiseModel multirobot_util::convertToChordalNoise(SharedNoiseModel noise, Matrix Rhat){
 
     // Converted chordal covariance
     Matrix CChordal = Matrix::Zero(12,12);
@@ -347,7 +349,7 @@ SharedNoiseModel multiRobotUtil::convertToChordalNoise(SharedNoiseModel noise, M
 
 
 //*****************************************************************************
-SharedDiagonal multiRobotUtil::convertToDiagonalNoise(SharedNoiseModel noise){
+SharedDiagonal multirobot_util::convertToDiagonalNoise(SharedNoiseModel noise){
 
     // Extract square root information matrix
     SharedGaussian gaussianNoise = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
@@ -365,3 +367,4 @@ SharedDiagonal multiRobotUtil::convertToDiagonalNoise(SharedNoiseModel noise){
     return chordalNoise;
 }
 
+}

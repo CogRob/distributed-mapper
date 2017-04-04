@@ -1,8 +1,13 @@
+#pragma once 
+
 #include <DistributedMapper.h>
 #include <fstream>
 #include <algorithm>
 #include <map>
 #include <utility>
+
+
+namespace distributed_mapper{
 
 #define USE_STOPPING_CONDITION 1
 #define PUSH_SINGLE_SUBGRAPH 0
@@ -410,7 +415,7 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
             // Convert to poses for logging
             gtsam::VectorValues linearizedPoses = distJacobis[robot]->linearizedPoses();
             gtsam::Values currentEstimate = distJacobis[robot]->currentEstimate();
-            gtsam::Values retractedEstimate = multiRobotUtil::retractPose3Global(currentEstimate, linearizedPoses);
+            gtsam::Values retractedEstimate = multirobot_util::retractPose3Global(currentEstimate, linearizedPoses);
             gtsam::Values distributed_robot_i = distJacobis[robot]->getConvertedEstimate(retractedEstimate);
             for(const gtsam::Values::ConstKeyValuePair& key_value: distributed_robot_i){
               gtsam::Key key = key_value.key;
@@ -609,7 +614,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
         linRotEstimateNeighbor.insert( key,  distJacobis[robot]->neighborsLinearizedRotationsAt(key) );
         // make a pose out of it
         gtsam::Values rotEstimateNeighbor = gtsam::InitializePose3::normalizeRelaxedRotations(linRotEstimateNeighbor);
-        gtsam::Values poseEstimateNeighbor = multiRobotUtil::pose3WithZeroTranslation(rotEstimateNeighbor);
+        gtsam::Values poseEstimateNeighbor = multirobot_util::pose3WithZeroTranslation(rotEstimateNeighbor);
         // store it
         distJacobis[robot]->updateNeighbor(key, poseEstimateNeighbor.at<gtsam::Pose3>(key));
       }
@@ -618,7 +623,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
   if(debug){
       std::cout << "Converted rotation to poses"  << std::endl;
       for(size_t robot = 0; robot < nrRobots; robot++){
-          multiRobotUtil::printKeys(distJacobis[robot]->currentEstimate());
+          multirobot_util::printKeys(distJacobis[robot]->currentEstimate());
         }
     }
 
@@ -711,3 +716,4 @@ void logResults(size_t nrRobots,
     }
 }
 
+}
