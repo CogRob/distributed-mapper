@@ -34,6 +34,7 @@ $ cd build
 $ cmake ..
 $ make -j3
 $ make check  # optonal, run unit tests
+$ make install
 ```
 
 Run Experiments On Simulated Block World data
