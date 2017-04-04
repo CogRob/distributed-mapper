@@ -15,14 +15,14 @@ namespace distributed_mapper{
 
 /**
  * @brief orderRobots orders the robots using flagged init
- * @param distJacobis is the vector of estimators communicating at that moment, only those will be optimized.
+ * @param distMappers is the vector of estimators communicating at that moment, only those will be optimized.
  * @param nrRobots is the number of robots
  * @param robotNames is the name of robots
  * @param useFlaggedInit orders using flagged initialization
  * @return
  */
 std::vector<size_t>
-orderRobots(std::vector< boost::shared_ptr<DistributedMapper> > distJacobis,
+orderRobots(std::vector< boost::shared_ptr<DistributedMapper> > distMappers,
             size_t nrRobots,
             std::string robotNames,
             bool useFlaggedInit,
@@ -36,7 +36,7 @@ orderRobots(std::vector< boost::shared_ptr<DistributedMapper> > distJacobis,
           // TODO: Test if the matrix is symmetric with zero diagonal entries
           gtsam::Matrix adjMatrix = gtsam::zeros(nrRobots, nrRobots);
           for(size_t robot_i = 0; robot_i < nrRobots; robot_i++){
-              gtsam::Values neighbors = distJacobis[robot_i]->neighbors(); // Get neighboring values
+              gtsam::Values neighbors = distMappers[robot_i]->neighbors(); // Get neighboring values
               for(const gtsam::Values::ConstKeyValuePair& key_value: neighbors){
                 gtsam::Key key = key_value.key;
                 char symbol = gtsam::symbolChr(key);
@@ -114,20 +114,20 @@ orderRobots(std::vector< boost::shared_ptr<DistributedMapper> > distJacobis,
 
 /**
  * @brief logRotationTrace
- * @param distJacobi_robot
+ * @param distMapper_robot
  * @param distributed_vectorvalues_iter
  * @param distributed_iter
  * @param subgraph_iter
  */
-std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr<DistributedMapper> distJacobi_robot){
+std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr<DistributedMapper> distMapper_robot){
 
   gtsam::Values distributed_iter; // For logging
   gtsam::VectorValues distributed_vectorvalues_iter;
 
   // Convert to poses for logging
-  distJacobi_robot->convertLinearizedRotationToPoses();
-  gtsam::Values current_estimate = distJacobi_robot->currentEstimate();
-  gtsam::Values distributed_robot_i = distJacobi_robot->getConvertedEstimate(current_estimate);
+  distMapper_robot->convertLinearizedRotationToPoses();
+  gtsam::Values current_estimate = distMapper_robot->currentEstimate();
+  gtsam::Values distributed_robot_i = distMapper_robot->getConvertedEstimate(current_estimate);
   for(const gtsam::Values::ConstKeyValuePair& key_value: distributed_robot_i){
     gtsam::Key key = key_value.key;
     distributed_iter.insert(key, distributed_robot_i.at<gtsam::Pose3>(key));
@@ -135,12 +135,12 @@ std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr
   for(const gtsam::Values::ConstKeyValuePair& key_value: current_estimate){
     gtsam::Key key = key_value.key;
 
-    if(distJacobi_robot->useChrLessFullGraph_){
+    if(distMapper_robot->useChrLessFullGraph_){
         int symbolIndex = gtsam::symbolIndex(key);
-        distributed_vectorvalues_iter.insert(symbolIndex, distJacobi_robot->linearizedRotationAt(key));
+        distributed_vectorvalues_iter.insert(symbolIndex, distMapper_robot->linearizedRotationAt(key));
       }
     else{
-        distributed_vectorvalues_iter.insert(key, distJacobi_robot->linearizedRotationAt(key));
+        distributed_vectorvalues_iter.insert(key, distMapper_robot->linearizedRotationAt(key));
       }
   }
 
@@ -150,7 +150,7 @@ std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr
 
 /**
  * @brief optimizeRotation optimizes the rotation in a distributed sense
- * @param distJacobis is the vector of estimators communicating at that moment, only those will be optimized.
+ * @param distMappers is the vector of estimators communicating at that moment, only those will be optimized.
  * @param maxIter is the maximum number of iteratinos
  * @param nrRobots is the number of robots
  * @param robotNames is the name of robots
@@ -160,7 +160,7 @@ std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr
  * @param subgraphRotationTrace contains the Values for a particular subgraph being optimized
  * @param rotationVectorValuesTrace contains the linearized rotation estimate
  */
-void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJacobis,
+void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMappers,
                       size_t maxIter,
                       size_t nrRobots,
                       std::string robotNames,
@@ -182,8 +182,8 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
 
   // Before starting no robot is optimized
   for(size_t robot: ordering){
-    distJacobis[robot]->updateInitialized(false);
-    distJacobis[robot]->clearNeighboringRobotInit();
+    distMappers[robot]->updateInitialized(false);
+    distMappers[robot]->clearNeighboringRobotInit();
   }
 
   if(debug)
@@ -202,24 +202,24 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
         gtsam::Values subgraph_iter; // For logging
 
         // Ask other robots for updated estimates and update it
-        for(const gtsam::Values::ConstKeyValuePair& key_value: distJacobis[robot]->neighbors()){
+        for(const gtsam::Values::ConstKeyValuePair& key_value: distMappers[robot]->neighbors()){
           gtsam::Key key = key_value.key;
 
-          // distJacobis only contains the robots that are currently communicating, so we check
+          // distMappers only contains the robots that are currently communicating, so we check
           // if the neighbor keys is from one of these robots, if so, we update it (cummunication)
           char symbol = gtsam::symbolChr(key);
           if(useLandmarks)symbol=tolower(symbol); // for communication links between two landmarks
           size_t neighboringRobotId = robotNames.find(symbol);
           if (neighboringRobotId != std::string::npos){ // if the robot is actually communicating
-              gtsam::Vector rotationEstimate = distJacobis[neighboringRobotId]->linearizedRotationAt(key);
-              distJacobis[robot]->updateNeighborLinearizedRotations(key, rotationEstimate); // this requires communication
+              gtsam::Vector rotationEstimate = distMappers[neighboringRobotId]->linearizedRotationAt(key);
+              distMappers[robot]->updateNeighborLinearizedRotations(key, rotationEstimate); // this requires communication
 
-              bool neighboringRobotInitialized = distJacobis[neighboringRobotId]->isRobotInitialized();
-              distJacobis[robot]->updateNeighboringRobotInitialized(symbol, neighboringRobotInitialized); // this requires communication
+              bool neighboringRobotInitialized = distMappers[neighboringRobotId]->isRobotInitialized();
+              distMappers[robot]->updateNeighboringRobotInitialized(symbol, neighboringRobotInitialized); // this requires communication
             }
           else{
               // Robot we are not communicating with are considered as optimized
-              distJacobis[robot]->updateNeighboringRobotInitialized(symbol, true);
+              distMappers[robot]->updateNeighboringRobotInitialized(symbol, true);
             }
         }
 
@@ -227,7 +227,7 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
           std::cout << "[optimizeRotation] Queried neighbors" << std::endl;
 
         if(rotationTrace){
-            std::pair<gtsam::Values, gtsam::VectorValues> log = logRotationTrace(distJacobis[robot]);
+            std::pair<gtsam::Values, gtsam::VectorValues> log = logRotationTrace(distMappers[robot]);
             distributed_iter.insert(log.first);
             subgraph_iter.insert(log.first);
             distributed_vectorvalues_iter.insert(log.second);
@@ -237,7 +237,7 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
           std::cout << "[optimizeRotation] Estimating rotation"  << std::endl;
 
         // Iterate
-        distJacobis[robot]->estimateRotation(); // optimization
+        distMappers[robot]->estimateRotation(); // optimization
 
         if(debug)
           std::cout << "[optimizeRotation] Estimate rotation complete"  << std::endl;
@@ -247,8 +247,8 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
       *  Jacobi Overrelax: updateType_ = postUpdate, gamma != 1
       *  Succ Overrelax: updateType_ = incUpdate, gamma != 1
       */
-        if(distJacobis[robot]->updateType_ == DistributedMapper::incUpdate){
-            distJacobis[robot]->updateRotation();
+        if(distMappers[robot]->updateType_ == DistributedMapper::incUpdate){
+            distMappers[robot]->updateRotation();
           }
 
         if(debug)
@@ -256,7 +256,7 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
 
 
         // This robot is initialized
-        distJacobis[robot]->updateInitialized(true);
+        distMappers[robot]->updateInitialized(true);
 
 
         // Trace
@@ -272,8 +272,8 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
 
       // If DistributeJacobi/Jacobi OverRelaxation, we update all the robots at the end of each iteration
       for(size_t robot: ordering){   // Iterate over each robot
-        if(distJacobis[robot]->updateType_ == DistributedMapper::postUpdate){
-            distJacobis[robot]->updateRotation();
+        if(distMappers[robot]->updateType_ == DistributedMapper::postUpdate){
+            distMappers[robot]->updateRotation();
           }
       }
 
@@ -321,7 +321,7 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
           // 2- change in the estimate of each robot is small enough
           bool stop = true;
           for(size_t robot = 0; robot < nrRobots; robot++){
-              double change = distJacobis[robot]->latestChange();
+              double change = distMappers[robot]->latestChange();
               if(change > rotationEstimateChangeThreshold){
                   stop = false;
                   break;
@@ -340,14 +340,14 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distJa
 
 /**
  * @brief optimizePose optimizes the pose in a distributed sense
- * @param distJacobis is the vector of estimators communicating at that moment, only those will be optimized.
+ * @param distMappers is the vector of estimators communicating at that moment, only those will be optimized.
  * @param maxIter is the maximum number of iterations
  * @param nrRobots is the number of robots
  * @param robotNames is the name of robots
  * @param ordering is the prioritized ordering
  * @param poseEstimateChangeThreshold provides an early stopping condition
  */
-void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobis,
+void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distMappers,
                   size_t maxIter,
                   size_t nrRobots,
                   std::string robotNames,
@@ -369,8 +369,8 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
 
   // Before starting no robot is optimized
   for(size_t robot: ordering){
-    distJacobis[robot]->updateInitialized(false);
-    distJacobis[robot]->clearNeighboringRobotInit();
+    distMappers[robot]->updateInitialized(false);
+    distMappers[robot]->clearNeighboringRobotInit();
   }
 
   if(debug)
@@ -383,26 +383,26 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
       for(size_t robot: ordering){   // Iterate each optimizer once
 
         gtsam::Values subgraph_iter; // For logging
-        gtsam::Values neighbors = distJacobis[robot]->neighbors();  // Get neighboring values
+        gtsam::Values neighbors = distMappers[robot]->neighbors();  // Get neighboring values
 
         // Ask other robots for updated estimates and update it
         for(const gtsam::Values::ConstKeyValuePair& key_value: neighbors){
           gtsam::Key key = key_value.key;
 
-          // distJacobis only contains the robots that are currently communicating, so we check
+          // distMappers only contains the robots that are currently communicating, so we check
           // if the neighbor keys is from one of these robots, if so, we update it (communication)
           char symbol = gtsam::symbolChr(key);
           if(useLandmarks)symbol=tolower(symbol); // for communication links between two landmarks
           size_t neighboringRobotId = robotNames.find(symbol);
           if (neighboringRobotId != std::string::npos){ // if the robot is actually communicating
-              gtsam::Vector poseEstimate = distJacobis[neighboringRobotId]->linearizedPosesAt(key);
-              distJacobis[robot]->updateNeighborLinearizedPoses(key, poseEstimate);
-              bool neighboringRobotInitialized = distJacobis[neighboringRobotId]->isRobotInitialized();
-              distJacobis[robot]->updateNeighboringRobotInitialized(symbol, neighboringRobotInitialized); // this requires communication
+              gtsam::Vector poseEstimate = distMappers[neighboringRobotId]->linearizedPosesAt(key);
+              distMappers[robot]->updateNeighborLinearizedPoses(key, poseEstimate);
+              bool neighboringRobotInitialized = distMappers[neighboringRobotId]->isRobotInitialized();
+              distMappers[robot]->updateNeighboringRobotInitialized(symbol, neighboringRobotInitialized); // this requires communication
             }
           else{
               // Robot we are not communicating with are considered as optimized
-              distJacobis[robot]->updateNeighboringRobotInitialized(symbol, true);
+              distMappers[robot]->updateNeighboringRobotInitialized(symbol, true);
             }
 
         }
@@ -413,10 +413,10 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
         // Logging
         if(poseTrace){
             // Convert to poses for logging
-            gtsam::VectorValues linearizedPoses = distJacobis[robot]->linearizedPoses();
-            gtsam::Values currentEstimate = distJacobis[robot]->currentEstimate();
+            gtsam::VectorValues linearizedPoses = distMappers[robot]->linearizedPoses();
+            gtsam::Values currentEstimate = distMappers[robot]->currentEstimate();
             gtsam::Values retractedEstimate = multirobot_util::retractPose3Global(currentEstimate, linearizedPoses);
-            gtsam::Values distributed_robot_i = distJacobis[robot]->getConvertedEstimate(retractedEstimate);
+            gtsam::Values distributed_robot_i = distMappers[robot]->getConvertedEstimate(retractedEstimate);
             for(const gtsam::Values::ConstKeyValuePair& key_value: distributed_robot_i){
               gtsam::Key key = key_value.key;
               distributed_iter.insert(key, distributed_robot_i.at<gtsam::Pose3>(key));
@@ -429,14 +429,14 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
           std::cout << "[optimizePoses] Estimating poses"  << std::endl;
 
         // Iterate
-        distJacobis[robot]->estimatePoses();
+        distMappers[robot]->estimatePoses();
 
         if(debug)
           std::cout << "[optimizePoses] Estimate poses complete"  << std::endl;
 
 
-        if(distJacobis[robot]->updateType_ == DistributedMapper::incUpdate){
-            distJacobis[robot]->updatePoses();
+        if(distMappers[robot]->updateType_ == DistributedMapper::incUpdate){
+            distMappers[robot]->updatePoses();
           }
 
         if(debug)
@@ -444,7 +444,7 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
 
 
         // This robot is initialized
-        distJacobis[robot]->updateInitialized(true);
+        distMappers[robot]->updateInitialized(true);
 
         // Trace
         if(subgraphPoseTrace)
@@ -457,8 +457,8 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
 
       // If DistributeJacobi/Jacobi OverRelaxation, we update all the robots at the end of each iteration
       for(size_t robot: ordering){   // Iterate over each robot
-        if(distJacobis[robot]->updateType_ == DistributedMapper::postUpdate){
-            distJacobis[robot]->updatePoses();
+        if(distMappers[robot]->updateType_ == DistributedMapper::postUpdate){
+            distMappers[robot]->updatePoses();
           }
       }
 
@@ -497,7 +497,7 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
           // 2- change in the estimate of each robot is small enough
           bool stop = true;
           for(size_t robot = 0; robot < nrRobots; robot++){     // Iterate each optimizer once
-              double change = distJacobis[robot]->latestChange();
+              double change = distMappers[robot]->latestChange();
               if(change > poseEstimateChangeThreshold){
                   stop = false;
                   break;
@@ -513,14 +513,14 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distJacobi
 
 /**
  * @brief distributedOptimization  performs distributed estimation using Jacobi algorithm
- * @param distJacobis is the vector of estimators communicating at that moment, only those will be optimized.
+ * @param distMappers is the vector of estimators communicating at that moment, only those will be optimized.
  * @param maxIter is the maximum number of iteration
  * @param rotationTrace if exists, it will store the trace of rotation estimates after each iteration
  * @param poseTrace if exists, it will store the trace of pose estimates after each iteration
  * @return the estimated vector of poses for each robot
  */
 std::vector< gtsam::Values >
-distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJacobis,
+distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMappers,
                      size_t maxIter,
                      DistributedMapper::UpdateType updateType = DistributedMapper::incUpdate,
                      double gamma = 1.0f,
@@ -539,13 +539,13 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
                      boost::optional<gtsam::NonlinearFactorGraph&> graphWithoutPrior = boost::none,
                      boost::optional<gtsam::GaussianFactorGraph&> centralizedRotationGraph = boost::none){
 
-  size_t nrRobots = distJacobis.size();
+  size_t nrRobots = distMappers.size();
   std::string robotNames = "";
   for(size_t robot = 0; robot < nrRobots; robot++){
-      robotNames += distJacobis[robot]->robotName(); // this is the string containing chars with robot names
-      distJacobis[robot]->setFlaggedInit(useFlaggedInit);
-      distJacobis[robot]->setUpdateType(updateType);
-      distJacobis[robot]->setGamma(gamma);
+      robotNames += distMappers[robot]->robotName(); // this is the string containing chars with robot names
+      distMappers[robot]->setFlaggedInit(useFlaggedInit);
+      distMappers[robot]->setUpdateType(updateType);
+      distMappers[robot]->setGamma(gamma);
     }
 
   if(debug)
@@ -554,7 +554,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
   ////////////////////////////////////////////////////////////////////////////////////////////
   // Flagged Init
   ////////////////////////////////////////////////////////////////////////////////////////////
-  std::vector<size_t> ordering = orderRobots(distJacobis,
+  std::vector<size_t> ordering = orderRobots(distMappers,
                                              nrRobots,
                                              robotNames,
                                              useFlaggedInit,
@@ -576,7 +576,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
     }
 
   // Optimize it
-  optimizeRotation(distJacobis,
+  optimizeRotation(distMappers,
                    maxIter,
                    nrRobots,
                    robotNames,
@@ -600,30 +600,30 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
   ////////////////////////////////////////////////////////////////////////////////////////////
   // Convert to poses and update neighbors (Project to SO3 + add zero translation)
   for(size_t robot = 0; robot < nrRobots; robot++){
-      distJacobis[robot]->convertLinearizedRotationToPoses();
+      distMappers[robot]->convertLinearizedRotationToPoses();
     }
   // Update neighboring values
   for(size_t robot = 0; robot < nrRobots; robot++){
       // Get neighboring values
-      gtsam::Values neighbors = distJacobis[robot]->neighbors();
+      gtsam::Values neighbors = distMappers[robot]->neighbors();
       // Ask other robots for updated estimates and update it
       for(const gtsam::Values::ConstKeyValuePair& key_value: neighbors){
         gtsam::Key key = key_value.key;
         // pick linear rotation estimate from *robot*
         gtsam::VectorValues linRotEstimateNeighbor;
-        linRotEstimateNeighbor.insert( key,  distJacobis[robot]->neighborsLinearizedRotationsAt(key) );
+        linRotEstimateNeighbor.insert( key,  distMappers[robot]->neighborsLinearizedRotationsAt(key) );
         // make a pose out of it
         gtsam::Values rotEstimateNeighbor = gtsam::InitializePose3::normalizeRelaxedRotations(linRotEstimateNeighbor);
         gtsam::Values poseEstimateNeighbor = multirobot_util::pose3WithZeroTranslation(rotEstimateNeighbor);
         // store it
-        distJacobis[robot]->updateNeighbor(key, poseEstimateNeighbor.at<gtsam::Pose3>(key));
+        distMappers[robot]->updateNeighbor(key, poseEstimateNeighbor.at<gtsam::Pose3>(key));
       }
     }
 
   if(debug){
       std::cout << "Converted rotation to poses"  << std::endl;
       for(size_t robot = 0; robot < nrRobots; robot++){
-          multirobot_util::printKeys(distJacobis[robot]->currentEstimate());
+          multirobot_util::printKeys(distMappers[robot]->currentEstimate());
         }
     }
 
@@ -637,7 +637,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
         }
     }
 
-  optimizePose(distJacobis,
+  optimizePose(distMappers,
                maxIter,
                nrRobots,
                robotNames,
@@ -655,13 +655,13 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
 
   // Do global retract
   for(size_t robot = 0; robot < nrRobots; robot++){
-      distJacobis[robot]->retractPose3Global();
+      distMappers[robot]->retractPose3Global();
     }
 
   // Get current estimate
   std::vector< gtsam::Values > estimates(nrRobots);
   for(size_t robot = 0; robot < nrRobots; robot++){
-      estimates[robot] = distJacobis[robot]->currentEstimate();
+      estimates[robot] = distMappers[robot]->currentEstimate();
     }
 
   return estimates;
@@ -674,10 +674,10 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distJac
 void logResults(size_t nrRobots,
                 std::string traceFile,
                 gtsam::Values centralized,
-                std::vector< boost::shared_ptr<DistributedMapper> > distJacobis){
+                std::vector< boost::shared_ptr<DistributedMapper> > distMappers){
 
   for(size_t robot = 0; robot < nrRobots; robot++){
-      std::pair<std::vector<double>, std::vector<double> > trace = distJacobis[robot]->trace();
+      std::pair<std::vector<double>, std::vector<double> > trace = distMappers[robot]->trace();
       std::vector<double> rotationTrace = trace.first;
       std::vector<double> poseTrace = trace.second;
       // Dump to a file
@@ -694,12 +694,12 @@ void logResults(size_t nrRobots,
       traceStream << "-1" << std::endl;
 
       // Log centralized estimate error for plotting
-      std::pair<double, double> errors = distJacobis[robot]->logCentralizedError(centralized);
+      std::pair<double, double> errors = distMappers[robot]->logCentralizedError(centralized);
       traceStream << errors.first << std::endl; // centralized error
       traceStream << errors.second << std::endl; // distributed error
 
       // Log the estimate change trace
-      std::pair<std::vector<double>, std::vector<double> > change_trace = distJacobis[robot]->traceEstimateChange();
+      std::pair<std::vector<double>, std::vector<double> > change_trace = distMappers[robot]->traceEstimateChange();
       std::vector<double> rotationChangeTrace = change_trace.first;
       std::vector<double> poseChangeTrace = change_trace.second;
 
