@@ -1,0 +1,16 @@
+# - Config file for the DistributedMapper package
+# It defines the following variables
+#  DistributedMapper_INCLUDE_DIRS - include directories for DistributedMapper
+#  DistributedMapper_LIBRARIES    - libraries to link against
+
+# Find and Set the library
+FIND_LIBRARY(DistributedMapper_LIBRARY distributed-mapper
+    PATHS @CMAKE_INSTALL_PREFIX@/lib
+    NO_DEFAULT_PATH
+)
+SET(DistributedMapper_LIBRARIES ${DistributedMapper_LIBRARY})
+
+# Find and set the include dirs
+SET(DistributedMapper_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include/distributed_mapper")
+SET(DistributedMapper_INCLUDE_DIRS ${DistributedMapper_INCLUDE_DIR})
+

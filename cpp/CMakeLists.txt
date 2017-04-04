@@ -27,13 +27,24 @@ file(GLOB srcs "src/*.cpp" "src/*.h")
 include_directories(src)
 add_library (distributed-mapper SHARED ${srcs} ${GTSAM_LIBRARIES})
 target_link_libraries(distributed-mapper ${Boost_LIBRARIES} gtsam)
+export(PACKAGE DistributedMapper)
+install(TARGETS distributed-mapper DESTINATION lib)
 
 ###########################################################################
-# Install executable
+# Add executable
 add_executable (runDistributedMapper  scripts/runDistributedMapper.cpp)
 target_link_libraries (runDistributedMapper distributed-mapper ${Boost_LIBRARIES} gtsam)
+install(TARGETS runDistributedMapper DESTINATION bin)
 
 ###########################################################################
 # Tests
 add_subdirectory(tests)
+
+###########################################################################
+# Install
+file(GLOB headers "src/*.h")
+install(FILES ${headers} DESTINATION include/distributed_mapper/)
+configure_file (${PROJECT_SOURCE_DIR}/DistributedMapperConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/DistributedMapperConfig.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/DistributedMapperConfig.cmake DESTINATION share/distributed_mapper)
+
 
