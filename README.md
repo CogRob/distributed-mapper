@@ -54,16 +54,16 @@ $ ./runDistributedMapper --nrRobots <num_robots> --dataDir <data_directory>
 ```
 For example:
 ```
-$ ./runDistributedMapper --nrRobots 2 --dataDir ../../data/example_2robots
+$ ./runDistributedMapper --nrRobots 2 --dataDir ../../data/example_2robots/
 ```
 OR
 ```
-$ ./runDistributedMapper --nrRobots 4 --dataDir ../../data/example_4robots
-$ ./runDistributedMapper --nrRobots 9 --dataDir ../../data/example_9robots
-$ ./runDistributedMapper --nrRobots 16 --dataDir ../../data/example_16robots
-$ ./runDistributedMapper --nrRobots 25 --dataDir ../../data/example_25robots
-$ ./runDistributedMapper --nrRobots 36 --dataDir ../../data/example_36robots
-$ ./runDistributedMapper --nrRobots 49 --dataDir ../../data/example_49robots
+$ ./runDistributedMapper --nrRobots 4 --dataDir ../../data/example_4robots/
+$ ./runDistributedMapper --nrRobots 9 --dataDir ../../data/example_9robots/
+$ ./runDistributedMapper --nrRobots 16 --dataDir ../../data/example_16robots/
+$ ./runDistributedMapper --nrRobots 25 --dataDir ../../data/example_25robots/
+$ ./runDistributedMapper --nrRobots 36 --dataDir ../../data/example_36robots/
+$ ./runDistributedMapper --nrRobots 49 --dataDir ../../data/example_49robots/
 ```
 
 Data Format
