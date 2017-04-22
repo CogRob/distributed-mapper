@@ -44,10 +44,16 @@ DistributedMapper::createSubgraphInnerAndSepEdges(const NonlinearFactorGraph& su
       if(robot0 == robotName_ || (useLandmarks_ && robot0 == toupper(robotName_))){
         if(!neighbors_.exists(key1))
           neighbors_.insert(key1, Pose3());
+
+        if(!neighborChars_.count(robot1))
+          neighborChars_.insert(robot1);
       }
       else{
         if(!neighbors_.exists(key0))
           neighbors_.insert(key0, Pose3());
+
+        if(!neighborChars_.count(robot0))
+          neighborChars_.insert(robot0);
       }
     }
   }

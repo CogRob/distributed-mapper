@@ -60,6 +60,7 @@ class DistributedMapper{
       gamma_ = 1.0f;
       useBetweenNoise_ = false;
       useLandmarks_ = false;
+      latestChange_ = DBL_MAX;
     }
 
 
@@ -436,6 +437,13 @@ class DistributedMapper{
       useFlaggedInit_ = flag;
     }
 
+    /**
+     * @brief getNeighboringChars returns the set of neighboring robot symbol chars
+     */
+    std::set<char> getNeighboringChars(){
+      return neighborChars_;
+    }
+
     bool useChrLessFullGraph_; // full graph pose have no key characters if it is true.
 
     // UpdateType and Gamma
@@ -454,6 +462,7 @@ class DistributedMapper{
     gtsam::NonlinearFactorGraph innerEdges_; // edges involving keys from a single robot (exclude separator edges)
     std::vector<size_t>  separatorEdgeIds_; // for each robot stores the position of the factors corresponding to separator edges
     gtsam::Values neighbors_; // contains keys of all the neighboring robots
+    std::set<char> neighborChars_; // contains neighboring robot symbols
     double latestChange_; // Latest change in estimate, stopping condition
     bool useBetweenNoise_; // To use the between factor noise instead of isotropic unit noise during pose estimation
 
