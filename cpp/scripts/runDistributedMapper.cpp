@@ -129,6 +129,7 @@ int main(int argc, char* argv[])
   vector<GraphAndValues> graphAndValuesVec; // vector of all graphs and initials
   bool useBetweenNoise = false; // use between factor noise or not
   bool useChrLessFullGraph = false; // whether full graph has character indexes or not
+  bool useLandmarks = false; // use landmarks -- landmarks are given symbols as upper case of robot name, for eg: if robot is 'a', landmark will be 'A'
 
   try{
     // Parse program options
@@ -145,6 +146,7 @@ int main(int argc, char* argv[])
         ("useFlaggedInit, f", po::value<bool>(&useFlaggedInit), "use flagged initialization or not (default: true)")
         ("useBetweenNoise, b", po::value<bool>(&useBetweenNoise), "use the given factor between noise instead of unit noise(default: false)")
         ("useChrLessFullGraph", po::value<bool>(&useChrLessFullGraph), "whether full graph has character indexes or not (default: false)")
+        ("useLandmarks, l", po::value<bool>(&useLandmarks), "use landmarks or not (default: false)")
         ("rthresh, r", po::value<double>(&rotationEstimateChangeThreshold), "Specify difference between rotation estimate provides an early stopping condition (default: 1e-2)")
         ("pthresh, p", po::value<double>(&poseEstimateChangeThreshold), "Specify difference between pose estimate provides an early stopping condition (default: 1e-2)")
         ("maxIter, m", po::value<size_t>(&maxIter), "maximum number of iterations (default: 100000)")
@@ -185,6 +187,12 @@ int main(int argc, char* argv[])
       robotNames_ = string("opqrstuvwxyz"); // robot names
     }
 
+  if(useLandmarks){
+      robotNames_ = string("abcdefghijklmnopqrstyvwxyz"); // robot names
+      // ABC... are used for objects
+    }
+
+
   bool disconnectedGraph = false; // Flag to check whether graphs are connected or not
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +225,9 @@ int main(int argc, char* argv[])
 
       // Use between noise or not in optimizePoses
       distMapper->setUseBetweenNoiseFlag(useBetweenNoise);
+
+      // Use landmarks
+      distMapper->setUseLandmarksFlag(useLandmarks);
 
       // Load subgraphs
       distMapper->loadSubgraphAndCreateSubgraphEdge(graphAndValues);
@@ -254,7 +265,7 @@ int main(int argc, char* argv[])
       try{
         // try optimizing
         vector< Values > estimates =  distributedOptimizer(distMappers, maxIter, updateType, gamma,
-                                                           rotationEstimateChangeThreshold, poseEstimateChangeThreshold, useFlaggedInit, false,
+                                                           rotationEstimateChangeThreshold, poseEstimateChangeThreshold, useFlaggedInit, useLandmarks,
                                                            debug, rotationTrace, poseTrace, subgraphRotationTrace, subgraphPoseTrace, rotationVectorValuesTrace);
 
         if(debug)
@@ -332,6 +343,7 @@ int main(int argc, char* argv[])
     }
   else{
       // Graph is disconnected
+      cout << "Graph is disconnected: " << endl;
       copyInitial(nrRobots, dataDir);
     }
 
