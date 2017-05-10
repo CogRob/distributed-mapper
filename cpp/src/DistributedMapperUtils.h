@@ -265,7 +265,6 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMa
 
       }
 
-
       if(debug)
         std::cout << "[optimizeRotation] Loop over robots complete" << std::endl;
 
@@ -322,6 +321,7 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMa
           bool stop = true;
           for(size_t robot = 0; robot < nrRobots; robot++){
               double change = distMappers[robot]->latestChange();
+              std::cout << "[optimizeRotation] Change (Robot " << robot << "): " << change << std::endl;
               if(change > rotationEstimateChangeThreshold){
                   stop = false;
                   break;
@@ -498,6 +498,7 @@ void optimizePose(std::vector< boost::shared_ptr<DistributedMapper> > distMapper
           bool stop = true;
           for(size_t robot = 0; robot < nrRobots; robot++){     // Iterate each optimizer once
               double change = distMappers[robot]->latestChange();
+              std::cout << "[optimizePoses] Change (Robot " << robot << "): " << change << std::endl;
               if(change > poseEstimateChangeThreshold){
                   stop = false;
                   break;

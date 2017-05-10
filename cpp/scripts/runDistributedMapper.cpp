@@ -283,8 +283,11 @@ int main(int argc, char* argv[])
             // Write the corresponding estimate to disk
             string distOptimized_i = dataDir + boost::lexical_cast<string>(i) + "_optimized.g2o";
             writeG2o(*(graphAndValuesVec[i].first), estimates[i], distOptimized_i);
-          }
 
+            // Write the corresponding estimate in TUM format
+            string distOptimized_i_tum = dataDir + boost::lexical_cast<string>(i) + "_optimizedTUM.txt";
+            multirobot_util::writeValuesAsTUM(estimates[i], distOptimized_i_tum);
+          }
 
         if(debug)
           cout << "Done Aggregating" << endl;
