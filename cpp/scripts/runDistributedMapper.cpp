@@ -202,6 +202,9 @@ int main(int argc, char* argv[])
   // Vector of distributed optimizers, one for each robot
   vector< boost::shared_ptr<DistributedMapper> > distMappers;
 
+  // Number of communication links
+  int nrCommLinks = 0;
+
   // Load subgraph and construct distMapper optimizers
   for(size_t robot = 0; robot < nrRobots; robot++){
 
@@ -246,6 +249,10 @@ int main(int argc, char* argv[])
       if(neighboringRobots.size() == 0)
         disconnectedGraph = true;
 
+      // Number of communication links
+      vector<size_t> commEdges = distMapper->seperatorEdge();
+      nrCommLinks+=commEdges.size();
+
       // Push to the set of optimizers
       distMappers.push_back(distMapper);
     }
@@ -262,7 +269,7 @@ int main(int argc, char* argv[])
   // Distributed Estimate
 
   if(!disconnectedGraph){
-      try{
+      //try{
         // try optimizing
         vector< Values > estimates =  distributedOptimizer(distMappers, maxIter, updateType, gamma,
                                                            rotationEstimateChangeThreshold, poseEstimateChangeThreshold, useFlaggedInit, useLandmarks,
@@ -336,19 +343,86 @@ int main(int argc, char* argv[])
         // Distributed Error
         ////////////////////////////////////////////////////////////////////////////////
         std::cout << "Distributed Error: " << chordalGraph.error(distributed) << std::endl;
+        
+	////////////////////////////////////////////////////////////////////////////////
+        // Log results
+        ////////////////////////////////////////////////////////////////////////////////
 
-      }
-      catch(...){
-        // Optimization failed (maybe due to disconnected graph)
-        // Copy initial to optimized g2o files in that case
-        copyInitial(nrRobots, dataDir);
-      }
-    }
+	////////////////////////////////////////////////////////////////////////////////
+	// Centralized Rotation Estimation for Trace Comparisons
+	////////////////////////////////////////////////////////////////////////////////
+	NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(fullGraph);
+	GaussianFactorGraph centralizedLinearGraph;
+	noiseModel::Unit::shared_ptr rotationGraphModel = noiseModel::Unit::Create(9);
+
+	for(const boost::shared_ptr<NonlinearFactor>& factor: pose3Graph) {
+		Matrix3 Rij;
+
+		boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+			boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+		if (pose3Between)
+			Rij = pose3Between->measured().rotation().matrix();
+		else
+			std::cout << "Error in buildLinearOrientationGraph" << std::endl;
+
+		const FastVector<Key>& keys = factor->keys();
+		Key key1 = keys[0], key2 = keys[1];
+		Matrix M9 = Matrix::Zero(9,9);
+		M9.block(0,0,3,3) = Rij;
+		M9.block(3,3,3,3) = Rij;
+		M9.block(6,6,3,3) = Rij;
+		centralizedLinearGraph.add(key1, -I9, key2, M9, zero9, rotationGraphModel);
+	}
+	GaussianFactorGraph centralizedLinearGraphWithoutPrior = centralizedLinearGraph.clone();
+
+	//string dataFile = dataDir + "/fullGraph_optimized.g2o";
+	//pair<NonlinearFactorGraph, Values> graphAndValues = loadGraphWithPrior(dataFile, priorModel);
+	//NonlinearFactorGraph graph = (graphAndValues.first);
+	pose3Graph = InitializePose3::buildPose3graph(fullGraphWithPrior);
+	centralizedLinearGraph = InitializePose3::buildLinearOrientationGraph(pose3Graph);
+	VectorValues rotEstCentralized = centralizedLinearGraph.optimize();
+
+	// Log distributed rotation error
+	std::string traceFileOverallError = traceFile+ "_overall_error.txt";
+	fstream traceStreamOverallError(traceFileOverallError.c_str(), fstream::out);
+	for(size_t i=0; i<rotationVectorValuesTrace.size(); i++){
+		traceStreamOverallError << centralizedLinearGraphWithoutPrior.error(rotationVectorValuesTrace[i]) << " ";
+	}
+	traceStreamOverallError << "-1" << endl;
+
+	// Log distributed pose error
+	for(size_t i=0; i<poseTrace.size(); i++){
+		traceStreamOverallError << fullGraph.error(poseTrace[i]) << " ";
+	}
+	traceStreamOverallError << "-1" << endl;
+
+	// Log centralized pose error
+	traceStreamOverallError << fullGraph.error(centralized) << endl;
+        traceStreamOverallError << fullGraph.error(distributed) << std::endl;
+        traceStreamOverallError << nrCommLinks/2 << std::endl;
+	traceStreamOverallError.close();
+
+	// Log centralized rotation error
+	double centralizedRotationError = centralizedLinearGraphWithoutPrior.error(rotEstCentralized);
+	std::string traceFileCentralizedRotation = traceFile+ "_centralizedRotation.txt";
+	fstream traceStreamCentralizedRotation(traceFileCentralizedRotation.c_str(), fstream::out);
+	traceStreamCentralizedRotation << centralizedRotationError << endl;
+	traceStreamCentralizedRotation.close();
+
+	logResults(nrRobots, traceFile, centralized, distMappers);
+
+	//}
+	//catch(...){
+	// Optimization failed (maybe due to disconnected graph)
+	// Copy initial to optimized g2o files in that case
+	//   copyInitial(nrRobots, dataDir);
+	// }
+  }
   else{
-      // Graph is disconnected
-      cout << "Graph is disconnected: " << endl;
-      copyInitial(nrRobots, dataDir);
-    }
+	  // Graph is disconnected
+	  cout << "Graph is disconnected: " << endl;
+	  copyInitial(nrRobots, dataDir);
+  }
 
 
 }
