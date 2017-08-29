@@ -39,6 +39,10 @@ add_executable (runDistributedMapper  scripts/runDistributedMapper.cpp)
 target_link_libraries (runDistributedMapper distributed-mapper ${Boost_LIBRARIES} gtsam)
 install(TARGETS runDistributedMapper DESTINATION bin)
 
+add_executable (checkOutliers  scripts/checkOutliers.cpp)
+target_link_libraries (checkOutliers distributed-mapper boost_system gtsam)
+install(TARGETS checkOutliers DESTINATION bin)
+
 ###########################################################################
 # Tests
 add_subdirectory(tests)

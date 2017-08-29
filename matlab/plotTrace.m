@@ -6,8 +6,8 @@
 close all; clc;
 
 %% Config
-nrRobots = 4; % Number of robots
-filename = '/tmp/testdistributedEstimation_4robots'; % Trace filename
+nrRobots = 10; % Number of robots
+filename = '/tmp/runG2o'; % Trace filename
 
 
 %% Plot
@@ -89,6 +89,7 @@ end
 trace_file = sprintf('%s_overall_error.txt',filename)
 trace = dlmread(trace_file, ' ');
 centralized_error = trace(3,1);
+distributed_error = trace(4,1);
 trace = trace(1:2,:);
 [rows, cols] = size(trace);
 

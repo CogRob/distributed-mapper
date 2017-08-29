@@ -332,12 +332,24 @@ int main(int argc, char* argv[])
         ////////////////////////////////////////////////////////////////////////////////
         Values centralized = distributed_mapper::multirobot_util::centralizedEstimation(fullGraphWithPrior, model, priorModel, useBetweenNoise);
         std::cout << "Centralized Two Stage Error: " << chordalGraph.error(centralized) << std::endl;
+        
+        // Write centralized full graph
+        string initialFile = dataDir +  "initial.g2o";
+        writeG2o(fullGraph, fullInitial, initialFile);
+        
+        // Write centralized full graph
+        string centralizedTwoStageFile = dataDir +  "centralizedTwoStage.g2o";
+        writeG2o(fullGraph, centralized, centralizedTwoStageFile);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Centralized Two Stage + Gauss Newton
         ////////////////////////////////////////////////////////////////////////////////
         Values chordalGN = distributed_mapper::multirobot_util::centralizedGNEstimation(fullGraphWithPrior, model, priorModel, useBetweenNoise);
         std::cout << "Centralized Two Stage + GN Error: " << chordalGraph.error(chordalGN) << std::endl;
+        
+        // Write centralized two stage + GN
+        string centralizedTwoStage_GNFile = dataDir +  "centralizedTwoStage_GN.g2o";
+        writeG2o(fullGraph, chordalGN, centralizedTwoStage_GNFile);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Distributed Error
