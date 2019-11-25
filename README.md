@@ -26,7 +26,7 @@ $ sudo make install
 Compilation & Installation
 ------
 
-In the ```cpp``` folder excute:
+In the ```distributed_mapper_core/cpp``` folder excute:
 
 ```
 $ mkdir build
@@ -39,7 +39,7 @@ $ make install
 
 Run Experiments On Simulated Block World data
 ------
-In the ```cpp/build``` folder, run:
+In the ```distributed_mapper_core/cpp/build``` folder, run:
 ```
 $ make testDistributedMapper.run
 ```
@@ -48,7 +48,7 @@ To plot per-robot graph errors, convergence and other statistics: change the var
 
 Run Distributed Mapper on a dataset
 ------
-In the ```cpp/build/``` folder, run:
+In the ```distributed_mapper_core/cpp/build/``` folder, run:
 ```
 $ ./runDistributedMapper --nrRobots <num_robots> --dataDir <data_directory>
 ```
