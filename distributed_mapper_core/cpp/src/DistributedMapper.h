@@ -23,7 +23,7 @@ namespace distributed_mapper{
 
 
 // Static Consts
-static const gtsam::Matrix I9 = gtsam::eye(9);
+static const gtsam::Matrix I9 = gtsam::Matrix::Identity(9, 9);
 static const gtsam::Vector zero9 = gtsam::Vector::Zero(9);
 static const size_t maxIter_ = 1000;
 static const gtsam::Key keyAnchor = gtsam::symbol('Z', 9999999);
@@ -219,7 +219,7 @@ class DistributedMapper{
       }
       else{
         neighbors_.insert(key, pose);
-        neighborsLinearizedPoses_.insert(key, gtsam::zero(6));
+        neighborsLinearizedPoses_.insert(key, gtsam::Matrix::Zero(6, 6));
         gtsam::Matrix3 R = pose.rotation().matrix();
         gtsam::Vector r = multirobot_util::rowMajorVector(R);
         neighborsLinearizedRotations_.insert(key, r);
@@ -458,7 +458,7 @@ class DistributedMapper{
 
     char robotName_;// Key for each robot
     gtsam::NonlinearFactorGraph graph_; // subgraph corresponding to each robot
-    gtsam::Values initial_; // subinitials corresponding to each robot        
+    gtsam::Values initial_; // subinitials corresponding to each robot
     gtsam::NonlinearFactorGraph innerEdges_; // edges involving keys from a single robot (exclude separator edges)
     std::vector<size_t>  separatorEdgeIds_; // for each robot stores the position of the factors corresponding to separator edges
     gtsam::Values neighbors_; // contains keys of all the neighboring robots

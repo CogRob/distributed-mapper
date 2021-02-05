@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <DistributedMapper.h>
 #include <fstream>
@@ -34,7 +34,7 @@ orderRobots(std::vector< boost::shared_ptr<DistributedMapper> > distMappers,
       if(useFlaggedInit){
           // Adjacency matrix is such that adjMatrix(i,j) returns the number of separators connecting robot i to robot j.
           // TODO: Test if the matrix is symmetric with zero diagonal entries
-          gtsam::Matrix adjMatrix = gtsam::zeros(nrRobots, nrRobots);
+          gtsam::Matrix adjMatrix = gtsam::Matrix::Zero(nrRobots, nrRobots);
           for(size_t robot_i = 0; robot_i < nrRobots; robot_i++){
               gtsam::Values neighbors = distMappers[robot_i]->neighbors(); // Get neighboring values
               for(const gtsam::Values::ConstKeyValuePair& key_value: neighbors){
@@ -529,7 +529,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
                      double poseEstimateChangeThreshold = 1e-6,
                      bool useFlaggedInit = false,
                      bool useLandmarks = false,
-                     bool debug = false,                     
+                     bool debug = false,
                      boost::optional<std::vector<gtsam::Values>&> rotationTrace = boost::none,
                      boost::optional<std::vector<gtsam::Values>&> poseTrace  = boost::none,
                      boost::optional<std::vector<gtsam::Values>&> subgraphRotationTrace = boost::none,

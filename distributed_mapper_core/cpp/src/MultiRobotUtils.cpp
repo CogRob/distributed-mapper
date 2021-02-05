@@ -5,7 +5,7 @@ using namespace gtsam;
 
 namespace distributed_mapper{
 
-  static const Matrix I9 = eye(9);
+  static const Matrix I9 = Matrix::Identity(9, 9);
   static const Vector zero9 = Vector::Zero(9);
   static const Matrix zero33= Matrix::Zero(3,3);
   static const Key keyAnchor = symbol('Z', 9999999);
@@ -43,7 +43,7 @@ namespace distributed_mapper{
     Values poses;
     for(const Values::ConstKeyValuePair& key_value: rotations){
         Key key = key_value.key;
-        Pose3 pose(rotations.at<Rot3>(key), zero(3));
+        Pose3 pose(rotations.at<Rot3>(key), Matrix::Zero(3, 3));
         poses.insert(key, pose);
       }
     return poses;
@@ -54,7 +54,7 @@ namespace distributed_mapper{
     VectorValues vectorValues;
     for(const Values::ConstKeyValuePair& key_value: rotations){
         Key key = key_value.key;
-        vectorValues.insert(key, zero(6));
+        vectorValues.insert(key, Matrix::Zero(6, 6));
       }
     return vectorValues;
   }
@@ -64,7 +64,7 @@ namespace distributed_mapper{
   multirobot_util::initializeZeroRotation(Values subInitials){
     VectorValues subInitialsVectorValue;
     for(const Values::ConstKeyValuePair& key_value: subInitials) {
-        Vector r = zero(9);
+        Vector r = zero9;
         subInitialsVectorValue.insert(key_value.key, r);
       }
     return subInitialsVectorValue;
@@ -148,7 +148,7 @@ namespace distributed_mapper{
 
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
               }
             else{
@@ -179,7 +179,7 @@ namespace distributed_mapper{
 
         // if using between noise, use the factor noise model converted to a conservative diagonal estimate
         if(useBetweenNoise){
-            model = convertToDiagonalNoise(pose3Between->get_noiseModel());
+            model = convertToDiagonalNoise(pose3Between->noiseModel());
           }
 
         const FastVector<Key>& keys = factor->keys();
@@ -227,7 +227,7 @@ namespace distributed_mapper{
 
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
               }
             else{
@@ -285,7 +285,7 @@ namespace distributed_mapper{
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
                 Rot3 rotation = cenRot.at<Rot3>(key1);
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel(), rotation.matrix());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
               }
             else{
@@ -325,7 +325,7 @@ namespace distributed_mapper{
     // Extract square root information matrix
     SharedGaussian gaussianNoise = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
     Matrix R = gaussianNoise->R();
-    Matrix C = gtsam::inverse(trans(R)*R); // get covariance from square root information
+    Matrix C = (trans(R)*R).inverse(); // get covariance from square root information
     //gaussianNoise->
 
     // convert rotation to a conservative isotropic noise model
@@ -340,7 +340,7 @@ namespace distributed_mapper{
     CChordal(6,6) = maxC; CChordal(7,7) = maxC; CChordal(8,8) = maxC;
 
     // Translation noise is kept as it is
-    Matrix translation = C.block(3,3,3,3)+ 0.01*gtsam::eye(3,3);
+    Matrix translation = C.block(3,3,3,3)+ 0.01*Matrix::Identity(3,3);
     CChordal.block(9,9,3,3) = Rhat*translation*trans(Rhat);
 
     SharedNoiseModel chordalNoise = noiseModel::Diagonal::Gaussian::Covariance(CChordal);
@@ -354,7 +354,7 @@ namespace distributed_mapper{
     // Extract square root information matrix
     SharedGaussian gaussianNoise = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
     Matrix R = gaussianNoise->R();
-    Matrix C = gtsam::inverse(trans(R)*R); // get covariance from square root information
+    Matrix C = (trans(R)*R).inverse(); // get covariance from square root information
 
     // convert rotation to a conservative isotropic noise model
     double maxC = DBL_MIN;
@@ -363,7 +363,7 @@ namespace distributed_mapper{
           maxC = C(i,i);
       }
 
-    SharedDiagonal chordalNoise = noiseModel::Diagonal::Sigmas(repeat(9, maxC));
+    SharedDiagonal chordalNoise = noiseModel::Diagonal::Sigmas(gtsam::Vector9::Constant(maxC));
     return chordalNoise;
   }
 

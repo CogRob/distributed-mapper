@@ -12,6 +12,7 @@ message("GTSAM Libraries: ${GTSAM_LIBRARIES}")
 
 # for unittest scripts
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
+include(GtsamBuildTypes)
 include(GtsamTesting)
 
 ###########################################################################
