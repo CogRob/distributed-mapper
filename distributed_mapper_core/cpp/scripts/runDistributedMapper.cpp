@@ -262,8 +262,6 @@ int main(int argc, char* argv[])
   // Distributed Estimate
 
   if(!disconnectedGraph){
-      try{
-        // try optimizing
         vector< Values > estimates =  distributedOptimizer(distMappers, maxIter, updateType, gamma,
                                                            rotationEstimateChangeThreshold, poseEstimateChangeThreshold, useFlaggedInit, useLandmarks,
                                                            debug, rotationTrace, poseTrace, subgraphRotationTrace, subgraphPoseTrace, rotationVectorValuesTrace);
@@ -337,12 +335,6 @@ int main(int argc, char* argv[])
         ////////////////////////////////////////////////////////////////////////////////
         std::cout << "Distributed Error: " << chordalGraph.error(distributed) << std::endl;
 
-      }
-      catch(...){
-        // Optimization failed (maybe due to disconnected graph)
-        // Copy initial to optimized g2o files in that case
-        copyInitial(nrRobots, dataDir);
-      }
     }
   else{
       // Graph is disconnected
