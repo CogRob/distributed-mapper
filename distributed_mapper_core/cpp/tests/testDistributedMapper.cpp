@@ -55,6 +55,8 @@ distributedEstimation(size_t nrRobots, string dataPath, string traceFile, Values
         GraphAndValues graphAndValues = readG2o(dataFile_i, true);
         distMapper->loadSubgraphAndCreateSubgraphEdge(graphAndValues);
 
+        /* std::cout << "Loaded subgraph for the robot " << robot << std::endl; */
+
         // Add prior
         if(robot==0){
             Symbol sym(robotNames_[robot],0);
@@ -173,13 +175,16 @@ TEST(DistributedMapper, testdistributedEstimation_2robots) {
     // Read centralized graph
     string dataFile("../../../data/blocks_world/2robots/fullGraph.g2o");
     pair<NonlinearFactorGraph, Values> graphAndValues = loadGraphWithPrior(dataFile, priorModel);
+    std::cout << "Loaded graph with prior model \n";
     NonlinearFactorGraph graph = (graphAndValues.first);
     Values centralized = centralizedEstimation(graph, model, priorModel);
+    std::cout << "Completed centralizedEstimation\n";
 
     size_t nrRobots = 2;
     string dataPath = "../../../data/blocks_world/2robots/";
     string traceFile = "/tmp/testdistributedEstimation_2robots";
     vector<Values> distributed = distributedEstimation(nrRobots, dataPath, traceFile, centralized, 1000, true, 1e-3, 1e-3);
+    std::cout << "Completed distributedEstimation\n";
 
     // Compare centralized and distributed pose estimates
     COMPARE_VALUES_DATASET(nrRobots, centralized, distributed, 1e-1);
@@ -298,8 +303,9 @@ TEST(DistributedMapper, testdistributedEstimation_49robots) {
   string traceFile = "/tmp/testdistributedEstimation_49robots";
   vector<Values> distributed = distributedEstimation(nrRobots, dataPath, traceFile, centralized);
 
+
   // TEST
-  COMPARE_VALUES_DATASET(nrRobots, centralized, distributed, 1e-0);
+ COMPARE_VALUES_DATASET(nrRobots, centralized, distributed, 1e-0);
 }
 
 /****************************************************************************** */

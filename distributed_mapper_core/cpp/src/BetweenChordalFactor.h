@@ -97,7 +97,7 @@ namespace gtsam {
 
     /** vector of errors */
   Vector evaluateError(const T& pi, const T& pj, boost::optional<Matrix&> Hi =
-      boost::none, boost::optional<Matrix&> Hj = boost::none) const {
+      boost::none, boost::optional<Matrix&> Hj = boost::none) const override {
 
     Matrix3 S1 = skewSymmetric(-1,0,0); //(0 0 0, 0 0 1, 0 -1 0);
     Matrix3 S2 = skewSymmetric(0,-1,0); //sparse([0 0 -1; 0 0 0; 1  0 0]);

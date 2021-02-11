@@ -134,7 +134,6 @@ std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr
   }
   for(const gtsam::Values::ConstKeyValuePair& key_value: current_estimate){
     gtsam::Key key = key_value.key;
-
     if(distMapper_robot->useChrLessFullGraph_){
         int symbolIndex = gtsam::symbolIndex(key);
         distributed_vectorvalues_iter.insert(symbolIndex, distMapper_robot->linearizedRotationAt(key));
@@ -173,6 +172,8 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMa
                       boost::optional<std::vector<gtsam::VectorValues>&> rotationVectorValuesTrace = boost::none,
                       boost::optional<gtsam::VectorValues&> rotationCentralized = boost::none,
                       boost::optional<gtsam::GaussianFactorGraph&> rotationGraph = boost::none){
+
+    debug = true;
 
   // Compute the centralized rotation error if it is available
   double centralizedError = -1;
@@ -540,6 +541,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
                      boost::optional<gtsam::NonlinearFactorGraph&> graphWithoutPrior = boost::none,
                      boost::optional<gtsam::GaussianFactorGraph&> centralizedRotationGraph = boost::none){
 
+    debug = true;
   size_t nrRobots = distMappers.size();
   std::string robotNames = "";
   for(size_t robot = 0; robot < nrRobots; robot++){
