@@ -3,6 +3,7 @@
 #include <DistributedMapper.h>
 #include <fstream>
 #include <algorithm>
+#include <gtsam/inference/Symbol.h>
 #include <map>
 #include <utility>
 
@@ -130,16 +131,16 @@ std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr
   gtsam::Values distributed_robot_i = distMapper_robot->getConvertedEstimate(current_estimate);
   for(const gtsam::Values::ConstKeyValuePair& key_value: distributed_robot_i){
     gtsam::Key key = key_value.key;
-    distributed_iter.insert(key, distributed_robot_i.at<gtsam::Pose3>(key));
+    distributed_iter.tryInsert(key, distributed_robot_i.at(key));
   }
   for(const gtsam::Values::ConstKeyValuePair& key_value: current_estimate){
     gtsam::Key key = key_value.key;
     if(distMapper_robot->useChrLessFullGraph_){
         int symbolIndex = gtsam::symbolIndex(key);
-        distributed_vectorvalues_iter.insert(symbolIndex, distMapper_robot->linearizedRotationAt(key));
+        distributed_vectorvalues_iter.tryInsert(symbolIndex, distMapper_robot->linearizedRotationAt(key));
       }
     else{
-        distributed_vectorvalues_iter.insert(key, distMapper_robot->linearizedRotationAt(key));
+        distributed_vectorvalues_iter.tryInsert(key, distMapper_robot->linearizedRotationAt(key));
       }
   }
 
@@ -172,8 +173,6 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMa
                       boost::optional<std::vector<gtsam::VectorValues>&> rotationVectorValuesTrace = boost::none,
                       boost::optional<gtsam::VectorValues&> rotationCentralized = boost::none,
                       boost::optional<gtsam::GaussianFactorGraph&> rotationGraph = boost::none){
-
-    debug = true;
 
   // Compute the centralized rotation error if it is available
   double centralizedError = -1;
@@ -229,9 +228,13 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMa
 
         if(rotationTrace){
             std::pair<gtsam::Values, gtsam::VectorValues> log = logRotationTrace(distMappers[robot]);
-            distributed_iter.insert(log.first);
-            subgraph_iter.insert(log.first);
-            distributed_vectorvalues_iter.insert(log.second);
+            for(const auto& value : log.first)
+            {
+                distributed_iter.tryInsert(value.key, value.value);
+                subgraph_iter.tryInsert(value.key, value.value);
+            }
+            for(const auto& value : log.second)
+                distributed_vectorvalues_iter.tryInsert(value.first, value.second);
           }
 
         if(debug)
@@ -541,7 +544,6 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
                      boost::optional<gtsam::NonlinearFactorGraph&> graphWithoutPrior = boost::none,
                      boost::optional<gtsam::GaussianFactorGraph&> centralizedRotationGraph = boost::none){
 
-    debug = true;
   size_t nrRobots = distMappers.size();
   std::string robotNames = "";
   for(size_t robot = 0; robot < nrRobots; robot++){
@@ -571,12 +573,6 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
   // Iterate rotation
   ////////////////////////////////////////////////////////////////////////////////////////////
 
-  // Remove keyAnchor belonging to the prior from the centralized rotation
-  if(rotationCentralized){
-      if(rotationCentralized->exists(keyAnchor)){
-          rotationCentralized->erase(keyAnchor);
-        }
-    }
 
   // Optimize it
   optimizeRotation(distMappers,
@@ -634,12 +630,6 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
   ////////////////////////////////////////////////////////////////////////////////////////////
   // Iterate poses
   ////////////////////////////////////////////////////////////////////////////////////////////
-  if(poseCentralized){
-      if(poseCentralized->exists(keyAnchor)){
-          poseCentralized->erase(keyAnchor);
-        }
-    }
-
   optimizePose(distMappers,
                maxIter,
                nrRobots,

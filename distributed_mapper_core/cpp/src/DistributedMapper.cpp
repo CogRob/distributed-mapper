@@ -71,8 +71,6 @@ DistributedMapper::loadSubgraphAndCreateSubgraphEdge(GraphAndValues graphAndValu
   graph_ = *(graphAndValues.first);
   initial_ = *(graphAndValues.second);
 
-  std::cout << "Printing keys \n";
-    multirobot_util::printKeys(initial_);
   // Convert initial values into row major vector values
   linearizedRotation_ = multirobot_util::rowMajorVectorValues(initial_);
 

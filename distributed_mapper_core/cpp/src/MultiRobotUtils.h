@@ -42,7 +42,6 @@ namespace distributed_mapper{
   gtsam::Symbol key = key_value.key; \
   int index = gtsam::symbolIndex(key); \
   Pose3 actual = result.at<Pose3>(key); \
-  std::cout << index << std::endl; \
   EXPECT(assert_equal(centralized.at<Pose3>(index), actual, tol));\
 } \
 } \

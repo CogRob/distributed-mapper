@@ -291,12 +291,7 @@ class DistributedMapper{
     gtsam::Pose3 estimateAt(gtsam::Key key){ return initial_.at<gtsam::Pose3>(key); }
 
     /** @brief returns the current estimate */
-    gtsam::Values currentEstimate(){
-      gtsam::Values values = initial_;
-      if(values.exists(keyAnchor))
-        values.erase(keyAnchor);
-      return values;
-    }
+    gtsam::Values currentEstimate(){ return initial_; }
 
     /** @brief returns the robot name */
     char robotName(){ return robotName_; }

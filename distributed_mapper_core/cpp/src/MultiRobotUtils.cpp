@@ -1,4 +1,5 @@
 #include <MultiRobotUtils.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace std;
 using namespace gtsam;
@@ -88,6 +89,7 @@ namespace distributed_mapper{
   //*****************************************************************************
   Values multirobot_util::retractPose3Global(Values initial, VectorValues delta){
     Values estimate;
+    //! If Initial estimate contains anchor node, remove it since delta does not contain it
     if(initial.exists(keyAnchor))
       initial.erase(keyAnchor);
     for(const Values::ConstKeyValuePair& key_value: initial){
@@ -215,15 +217,10 @@ namespace distributed_mapper{
 
 
     VectorValues rotEstCentralized = centralizedLinearGraph.optimize();
-    // Remove keyAnchor belonging to the prior from the centralized rotation
-    if(rotEstCentralized.exists(keyAnchor)){
-        rotEstCentralized.erase(keyAnchor);
-    }
 
     Values cenRot = InitializePose3::normalizeRelaxedRotations(rotEstCentralized);
     Values initial = pose3WithZeroTranslation(cenRot);
 
-    std::cout << "Obtained initial estimate for linear rotation graph" << graph.size() <<  "\n";
     // STEP 2: solve for poses using initial estimate from rotations
     // Linearize pose3 factor graph, using chordal formulation
     NonlinearFactorGraph cenFG;
@@ -235,8 +232,8 @@ namespace distributed_mapper{
             Key key1 = factor->keys().at(0);
             Key key2 = factor->keys().at(1);
 
-            Symbol sym1(key1), sym2(key2);
 
+            Symbol sym1(key1), sym2(key2);
             Pose3 measured = factor->measured();
 
             if(useBetweenNoise){
@@ -249,20 +246,19 @@ namespace distributed_mapper{
               }
           }
       }
-
     NonlinearFactorGraph chordalGraphWithoutPrior = cenFG.clone();
     // First key
     Key firstKey = KeyVector(initial.keys()).at(0);
-
     cenFG.add(PriorFactor<Pose3>(firstKey, initial.at<Pose3>(firstKey), priorNoise));
-
     Values estimate = initial;
+
     for(const auto key_value : estimate)
     {
         Symbol sym1(key_value.key);
     }
     GaussianFactorGraph cenGFG = *(cenFG.linearize(estimate));
     VectorValues cenPose_VectorValues = cenGFG.optimize(); // optimize
+
     estimate = retractPose3Global(estimate, cenPose_VectorValues);
 
     std::cout << "Centralized Two Stage Error: " << chordalGraphWithoutPrior.error(estimate) << std::endl;
