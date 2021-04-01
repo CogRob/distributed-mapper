@@ -23,10 +23,8 @@ namespace distributed_mapper{
 
 
 // Static Consts
-static const gtsam::Matrix I9 = gtsam::Matrix::Identity(9, 9);
-static const gtsam::Vector zero9 = gtsam::Vector::Zero(9);
 static const size_t maxIter_ = 1000;
-static const gtsam::Key keyAnchor = gtsam::symbol('Z', 9999999);
+static const gtsam::Key keyAnchor = 99999999;
 
 /**
  * @brief The DistributedMapper class runs distributed mapping algorithm

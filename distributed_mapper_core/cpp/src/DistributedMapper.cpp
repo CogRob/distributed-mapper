@@ -112,7 +112,7 @@ DistributedMapper::estimateRotation(){
 
     Pose3 relativePose = pose3Between->measured();
     Matrix3 R01t = relativePose.rotation().transpose().matrix();
-    Matrix M9 = Matrix::Zero(9,9);
+    Matrix M9 = Z_9x9;
     M9.block(0,0,3,3) = R01t;
     M9.block(3,3,3,3) = R01t;
     M9.block(6,6,3,3) = R01t;
@@ -144,7 +144,7 @@ DistributedMapper::estimateRotation(){
       if(!useFlaggedInit_ || neighboringRobotsInitialized_[robot0]){ // if use flagged initialization and robot sharing the edge is already optimized
         Vector r0 = neighborsLinearizedRotations_.at(key0);
         Vector M9_r0 = M9*r0;
-        rotSubgraph.add(key1, I9, M9_r0, model);
+        rotSubgraph.add(key1, I_9x9, M9_r0, model);
       }
     }
     else{

@@ -6,10 +6,7 @@ using namespace gtsam;
 
 namespace distributed_mapper{
 
-  static const Matrix I9 = Matrix::Identity(9, 9);
-  static const Vector zero9 = Vector::Zero(9);
-  static const Matrix zero33= Matrix::Zero(3,3);
-  static const Key keyAnchor = symbol('Z', 9999999);
+  static const Key keyAnchor = 99999999;
 
   //*****************************************************************************
   Vector multirobot_util::rowMajorVector(Matrix3 R){
@@ -65,7 +62,7 @@ namespace distributed_mapper{
   multirobot_util::initializeZeroRotation(Values subInitials){
     VectorValues subInitialsVectorValue;
     for(const Values::ConstKeyValuePair& key_value: subInitials) {
-        Vector r = zero9;
+        Vector r = Z_9x1;
         subInitialsVectorValue.insert(key_value.key, r);
       }
     return subInitialsVectorValue;
@@ -89,9 +86,6 @@ namespace distributed_mapper{
   //*****************************************************************************
   Values multirobot_util::retractPose3Global(Values initial, VectorValues delta){
     Values estimate;
-    //! If Initial estimate contains anchor node, remove it since delta does not contain it
-    if(initial.exists(keyAnchor))
-      initial.erase(keyAnchor);
     for(const Values::ConstKeyValuePair& key_value: initial){
         Key key = key_value.key;
         Vector6 deltaPose = delta.at(key);
@@ -188,16 +182,16 @@ namespace distributed_mapper{
 
         const FastVector<Key>& keys = factor->keys();
         Key key1 = keys[0], key2 = keys[1];
-        Matrix M9 = Matrix::Zero(9,9);
+        Matrix M9 = Z_9x9;
         M9.block(0,0,3,3) = Rij;
         M9.block(3,3,3,3) = Rij;
         M9.block(6,6,3,3) = Rij;
 
-        linearGraph.add(key1, -I9, key2, M9, zero9, model);
+        linearGraph.add(key1, -I_9x9, key2, M9, Z_9x1, model);
       }
     // prior on the anchor orientation
     SharedDiagonal priorModel = noiseModel::Unit::Create(9);
-    linearGraph.add(keyAnchor, I9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0).finished(), priorModel);
+    linearGraph.add(keyAnchor, I_9x9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0).finished(), priorModel);
     return linearGraph;
   }
 
@@ -231,11 +225,7 @@ namespace distributed_mapper{
         if(factor){
             Key key1 = factor->keys().at(0);
             Key key2 = factor->keys().at(1);
-
-
-            Symbol sym1(key1), sym2(key2);
             Pose3 measured = factor->measured();
-
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
                 SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel());
@@ -252,14 +242,11 @@ namespace distributed_mapper{
     cenFG.add(PriorFactor<Pose3>(firstKey, initial.at<Pose3>(firstKey), priorNoise));
     Values estimate = initial;
 
-    for(const auto key_value : estimate)
-    {
-        Symbol sym1(key_value.key);
+    for(size_t iter=0; iter < 1; iter++){
+        GaussianFactorGraph cenGFG = *(cenFG.linearize(estimate));
+        VectorValues cenPose_VectorValues = cenGFG.optimize(); // optimize
+        estimate = retractPose3Global(estimate, cenPose_VectorValues);
     }
-    GaussianFactorGraph cenGFG = *(cenFG.linearize(estimate));
-    VectorValues cenPose_VectorValues = cenGFG.optimize(); // optimize
-
-    estimate = retractPose3Global(estimate, cenPose_VectorValues);
 
     std::cout << "Centralized Two Stage Error: " << chordalGraphWithoutPrior.error(estimate) << std::endl;
     return estimate;

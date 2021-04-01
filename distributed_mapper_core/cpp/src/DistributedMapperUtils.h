@@ -573,6 +573,12 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
   // Iterate rotation
   ////////////////////////////////////////////////////////////////////////////////////////////
 
+  // Remove keyAnchor belonging to the prior from the centralized rotation
+  if(rotationCentralized){
+      if(rotationCentralized->exists(keyAnchor)){
+          rotationCentralized->erase(keyAnchor);
+        }
+    }
 
   // Optimize it
   optimizeRotation(distMappers,
@@ -630,7 +636,13 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
   ////////////////////////////////////////////////////////////////////////////////////////////
   // Iterate poses
   ////////////////////////////////////////////////////////////////////////////////////////////
-  optimizePose(distMappers,
+    if(poseCentralized){
+      if(poseCentralized->exists(keyAnchor)){
+          poseCentralized->erase(keyAnchor);
+        }
+    }
+
+    optimizePose(distMappers,
                maxIter,
                nrRobots,
                robotNames,

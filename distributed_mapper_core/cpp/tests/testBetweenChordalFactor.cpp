@@ -108,7 +108,7 @@ JacobianFactor linearChordalFactor(const boost::shared_ptr<NonlinearFactor>& fac
           boost::dynamic_pointer_cast<PriorFactor<Pose3> >(factor);
       if(pose3Prior){
           Key key_i = pose3Prior->keys().at(0);
-          return JacobianFactor(key_i, Matrix::Identity(6, 6), Matrix::Zero(6, 6), gtsam::noiseModel::Isotropic::Variance(6, 1e-12)); // TODO: define the noise model just once
+          return JacobianFactor(key_i, I_6x6, Z_6x6, gtsam::noiseModel::Isotropic::Variance(6, 1e-12)); // TODO: define the noise model just once
         }
       else{
           cout << "Invalid Factor" << endl; exit(1);
@@ -202,7 +202,7 @@ TEST(DistributedMapper, testDistributedMapperBetweenChordal) {
 
   // Linearize and add prior
   GaussianFactorGraph betweenChordalGaussianFactorGraph = *(betweenChordalFactorGraph.linearize(centralizedRotation));
-  betweenChordalGaussianFactorGraph.add(JacobianFactor(0, Matrix::Identity(6, 6), Matrix::Zero(6, 6), gtsam::noiseModel::Isotropic::Variance(6, 1e-12)));
+  betweenChordalGaussianFactorGraph.add(JacobianFactor(0, I_6x6, Z_6x6, gtsam::noiseModel::Isotropic::Variance(6, 1e-12)));
   VectorValues betweenChordalVectorValues = betweenChordalGaussianFactorGraph.optimize();
   Values betweenChordalFactorEstimate = multirobot_util::retractPose3Global(centralizedRotation, betweenChordalVectorValues);
 
