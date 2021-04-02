@@ -1,25 +1,26 @@
 Distributed-Mapper
 ===================================================
-This library is an implementation of the algorithm described in Distributed Trajectory Estimation with Privacy and Communication Constraints: 
+This library is an implementation of the algorithm described in Distributed Trajectory Estimation with Privacy and Communication Constraints:
 a Two-Stage Distributed Gauss-Seidel Approach. The core library is developed in C++
 language.
 
-Distributed-Mapper is developed by [Siddharth Choudhary](http://www.cc.gatech.edu/~choudhar/), 
-[Luca Carlone](http://www.lucacarlone.com/), [Carlos Nieto](https://scholar.google.com/citations?user=p3S78jsAAAAJ&hl=en) and [John Rogers](https://scholar.google.com/citations?user=uH_LDocAAAAJ&hl=en) as part of the collaboration between Georgia Tech, MIT and Army Research Lab. 
+Distributed-Mapper is developed by [Siddharth Choudhary](http://www.cc.gatech.edu/~choudhar/),
+[Luca Carlone](http://www.lucacarlone.com/), [Carlos Nieto](https://scholar.google.com/citations?user=p3S78jsAAAAJ&hl=en) and [John Rogers](https://scholar.google.com/citations?user=uH_LDocAAAAJ&hl=en) as part of the collaboration between Georgia Tech, MIT and Army Research Lab.
 
 Prerequisites
 ------
 
 - CMake (Ubuntu: `sudo apt-get install cmake`), compilation configuration tool.
 - [Boost](http://www.boost.org/)  (Ubuntu: `sudo apt-get install libboost-all-dev`), portable C++ source libraries.
-- [GTSAM](https://bitbucket.org/gtborg/gtsam) develop branch, a C++ library that implement smoothing and mapping (SAM) framework in robotics and vision. Here we use factor graph implementations and inference/optimization tools provided by GTSAM. To install a particular commit of GTSAM follow the following instructions: 
+- [GTSAM](https://github.com/borglab/gtsam) develop branch, a C++ library that implement smoothing and mapping (SAM) framework in robotics and vision. Here we use factor graph implementations and inference/optimization tools provided by GTSAM. This repository has been tested on the latest develop branch of GTSAM 4.0 (Commit ID: `d304358deeaa4625cf24a8e0d94145bb3435d5bc`).
+- To install a particular commit of GTSAM follow the following instructions:
 
 ```
-$ git clone https://bitbucket.org/gtborg/gtsam
-$ git checkout b7c695fa71efd43b40972eec154df265617fc07d -b dist-mapper
-$ mkdir build
+$ git clone https://github.com/borglab/gtsam.git && cd gtsam
+$ git checkout d304358deeaa4625cf24a8e0d94145bb3435d5bc -b dist-mapper
+$ mkdir build && cd build
 $ cmake ..
-$ make -j8
+$ make -j$(nproc)
 $ sudo make install
 ```
 
@@ -33,7 +34,7 @@ $ mkdir build
 $ cd build
 $ cmake ..
 $ make -j3
-$ make check  # optonal, run unit tests
+$ make check  # optional, run unit tests
 $ make install
 ```
 
@@ -71,8 +72,8 @@ Data Format
 Each robot's graph is written in [g2o](https://github.com/RainerKuemmerle/g2o/wiki/File-Format) format and is indexed from 0. For example, for a 4 robot scenario, the directory will contain ```0.g2o```, ```1.g2o```, ```2.g2o``` and ```3.g2o```. An example dataset for 4 robots is given in ```data/example_4robots```. Each robot is specified using a character prefix symbol like 'a', 'b', 'c', 'd' for 4 robot case.
 
 ### Vertices ###
-All the vertices corresponding to the first robot will be prefixed using 'a' using ```gtsam.Symbol``` like  ```gtsam.Symbol('a', 1)```, ```gtsam.Symbol('a',2)``` etc. Similarly the second robot will be prefixed using 'b' like ```gtsam.Symbol('b', 1)```, ```gtsam.Symbol('b',2)``` etc. 
-For example, the vertices for the first robot (in ```0.g2o```) in 4 robot scenario is written as,  
+All the vertices corresponding to the first robot will be prefixed using 'a' using ```gtsam.Symbol``` like  ```gtsam.Symbol('a', 1)```, ```gtsam.Symbol('a',2)``` etc. Similarly the second robot will be prefixed using 'b' like ```gtsam.Symbol('b', 1)```, ```gtsam.Symbol('b',2)``` etc.
+For example, the vertices for the first robot (in ```0.g2o```) in 4 robot scenario is written as,
 ```
 VERTEX_SE3:QUAT 6989586621679009792 0.324676 0.212487 0.042821 0.00270783 0.0121983 0.00760222 0.999893
 VERTEX_SE3:QUAT 6989586621679009793 0.0716917 2.00724 -0.0729262 -0.00363348 0.00166876 0.00765756 0.999963
@@ -92,8 +93,8 @@ VERTEX_SE3:QUAT 6989586621679009844 1.8204 -0.431461 6.01878 0.00230292 -0.00198
 VERTEX_SE3:QUAT 6989586621679009845 1.92566 2.23857 6.19073 0.0152246 0.0101054 -0.00845407 0.999797
 ```
 ### Intra-Robot Edges ###
- All the non-communication edges corresponding to the first robot is written in g2o format in ```0.g2o``` and likewise for the other robots in ```1.g2o```, ```2.g2o```, ```3.g2o``` respectively. For example, the intra-robot edges for the first robot (in ```0.g2o```) in 4 robot scenario is written as,  
- 
+ All the non-communication edges corresponding to the first robot is written in g2o format in ```0.g2o``` and likewise for the other robots in ```1.g2o```, ```2.g2o```, ```3.g2o``` respectively. For example, the intra-robot edges for the first robot (in ```0.g2o```) in 4 robot scenario is written as,
+
 ```
 EDGE_SE3:QUAT 6989586621679009792 6989586621679009793 -0.390787 2.11308 0.0155589 0.00042254 -0.00328797 -0.010647 0.999938 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1
 EDGE_SE3:QUAT 6989586621679009792 6989586621679009796 2.30676 0.546708 0.0334878 -0.00546279 -0.00389958 0.00693602 0.999953 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1
@@ -126,7 +127,7 @@ EDGE_SE3:QUAT 6989586621679009829 6989586621679009845 -0.00151322 0.142061 1.907
 ```
 
 ### Inter-Robot Communication Edges ###
-Communication edges between the two robots are written in the g2o files corresponding to both the robots.  For example, the communication edges between the first and second robot (in ```0.g2o``` and ```1.g2o```) in 4 robot scenario is written as,  
+Communication edges between the two robots are written in the g2o files corresponding to both the robots.  For example, the communication edges between the first and second robot (in ```0.g2o``` and ```1.g2o```) in 4 robot scenario is written as,
 
 ```
 EDGE_SE3:QUAT 6989586621679009793 7061644215716937730 0.160437 1.90624 -0.00931847 0.00910267 0.0069412 0.000641041 0.999934 1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1
@@ -163,7 +164,7 @@ If you use this work, please cite any of the following publications:
 	       John Rogers and
                Henrik I. Christensen and
                Frank Dellaert},
-  title     = {Distributed Trajectory Estimation with Privacy and Communication Constraints: 
+  title     = {Distributed Trajectory Estimation with Privacy and Communication Constraints:
 a Two-Stage Distributed Gauss-Seidel Approach},
   booktitle = {IEEE International Conference on Robotics and Automation 2016},
   year      = {2016}

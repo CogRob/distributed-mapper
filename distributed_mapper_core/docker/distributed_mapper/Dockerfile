@@ -44,7 +44,7 @@ WORKDIR /home/distmapper
 
 RUN git clone https://bitbucket.org/gtborg/gtsam  \
     && cd gtsam \
-    && git checkout b7c695fa71efd43b40972eec154df265617fc07d -b dist-mapper
+    && git checkout d304358deeaa4625cf24a8e0d94145bb3435d5bc -b dist-mapper
 
 RUN cd /home/distmapper/gtsam/ \
     && mkdir build \
