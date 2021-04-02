@@ -1,8 +1,9 @@
-#pragma once 
+#pragma once
 
 #include <DistributedMapper.h>
 #include <fstream>
 #include <algorithm>
+#include <gtsam/inference/Symbol.h>
 #include <map>
 #include <utility>
 
@@ -34,7 +35,7 @@ orderRobots(std::vector< boost::shared_ptr<DistributedMapper> > distMappers,
       if(useFlaggedInit){
           // Adjacency matrix is such that adjMatrix(i,j) returns the number of separators connecting robot i to robot j.
           // TODO: Test if the matrix is symmetric with zero diagonal entries
-          gtsam::Matrix adjMatrix = gtsam::zeros(nrRobots, nrRobots);
+          gtsam::Matrix adjMatrix = gtsam::Matrix::Zero(nrRobots, nrRobots);
           for(size_t robot_i = 0; robot_i < nrRobots; robot_i++){
               gtsam::Values neighbors = distMappers[robot_i]->neighbors(); // Get neighboring values
               for(const gtsam::Values::ConstKeyValuePair& key_value: neighbors){
@@ -130,17 +131,16 @@ std::pair<gtsam::Values, gtsam::VectorValues> logRotationTrace(boost::shared_ptr
   gtsam::Values distributed_robot_i = distMapper_robot->getConvertedEstimate(current_estimate);
   for(const gtsam::Values::ConstKeyValuePair& key_value: distributed_robot_i){
     gtsam::Key key = key_value.key;
-    distributed_iter.insert(key, distributed_robot_i.at<gtsam::Pose3>(key));
+    distributed_iter.tryInsert(key, distributed_robot_i.at(key));
   }
   for(const gtsam::Values::ConstKeyValuePair& key_value: current_estimate){
     gtsam::Key key = key_value.key;
-
     if(distMapper_robot->useChrLessFullGraph_){
         int symbolIndex = gtsam::symbolIndex(key);
-        distributed_vectorvalues_iter.insert(symbolIndex, distMapper_robot->linearizedRotationAt(key));
+        distributed_vectorvalues_iter.tryInsert(symbolIndex, distMapper_robot->linearizedRotationAt(key));
       }
     else{
-        distributed_vectorvalues_iter.insert(key, distMapper_robot->linearizedRotationAt(key));
+        distributed_vectorvalues_iter.tryInsert(key, distMapper_robot->linearizedRotationAt(key));
       }
   }
 
@@ -228,9 +228,13 @@ void optimizeRotation(std::vector< boost::shared_ptr<DistributedMapper> > distMa
 
         if(rotationTrace){
             std::pair<gtsam::Values, gtsam::VectorValues> log = logRotationTrace(distMappers[robot]);
-            distributed_iter.insert(log.first);
-            subgraph_iter.insert(log.first);
-            distributed_vectorvalues_iter.insert(log.second);
+            for(const auto& value : log.first)
+            {
+                distributed_iter.tryInsert(value.key, value.value);
+                subgraph_iter.tryInsert(value.key, value.value);
+            }
+            for(const auto& value : log.second)
+                distributed_vectorvalues_iter.tryInsert(value.first, value.second);
           }
 
         if(debug)
@@ -529,7 +533,7 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
                      double poseEstimateChangeThreshold = 1e-6,
                      bool useFlaggedInit = false,
                      bool useLandmarks = false,
-                     bool debug = false,                     
+                     bool debug = false,
                      boost::optional<std::vector<gtsam::Values>&> rotationTrace = boost::none,
                      boost::optional<std::vector<gtsam::Values>&> poseTrace  = boost::none,
                      boost::optional<std::vector<gtsam::Values>&> subgraphRotationTrace = boost::none,
@@ -632,13 +636,13 @@ distributedOptimizer(std::vector< boost::shared_ptr<DistributedMapper> > distMap
   ////////////////////////////////////////////////////////////////////////////////////////////
   // Iterate poses
   ////////////////////////////////////////////////////////////////////////////////////////////
-  if(poseCentralized){
+    if(poseCentralized){
       if(poseCentralized->exists(keyAnchor)){
           poseCentralized->erase(keyAnchor);
         }
     }
 
-  optimizePose(distMappers,
+    optimizePose(distMappers,
                maxIter,
                nrRobots,
                robotNames,

@@ -1,14 +1,12 @@
 #include <MultiRobotUtils.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace std;
 using namespace gtsam;
 
 namespace distributed_mapper{
 
-  static const Matrix I9 = eye(9);
-  static const Vector zero9 = Vector::Zero(9);
-  static const Matrix zero33= Matrix::Zero(3,3);
-  static const Key keyAnchor = symbol('Z', 9999999);
+  static const Key keyAnchor = 99999999;
 
   //*****************************************************************************
   Vector multirobot_util::rowMajorVector(Matrix3 R){
@@ -43,7 +41,7 @@ namespace distributed_mapper{
     Values poses;
     for(const Values::ConstKeyValuePair& key_value: rotations){
         Key key = key_value.key;
-        Pose3 pose(rotations.at<Rot3>(key), zero(3));
+        Pose3 pose(rotations.at<Rot3>(key), Matrix::Zero(3, 3));
         poses.insert(key, pose);
       }
     return poses;
@@ -54,7 +52,7 @@ namespace distributed_mapper{
     VectorValues vectorValues;
     for(const Values::ConstKeyValuePair& key_value: rotations){
         Key key = key_value.key;
-        vectorValues.insert(key, zero(6));
+        vectorValues.insert(key, Matrix::Zero(6, 6));
       }
     return vectorValues;
   }
@@ -64,7 +62,7 @@ namespace distributed_mapper{
   multirobot_util::initializeZeroRotation(Values subInitials){
     VectorValues subInitialsVectorValue;
     for(const Values::ConstKeyValuePair& key_value: subInitials) {
-        Vector r = zero(9);
+        Vector r = Z_9x1;
         subInitialsVectorValue.insert(key_value.key, r);
       }
     return subInitialsVectorValue;
@@ -148,7 +146,7 @@ namespace distributed_mapper{
 
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
               }
             else{
@@ -179,21 +177,21 @@ namespace distributed_mapper{
 
         // if using between noise, use the factor noise model converted to a conservative diagonal estimate
         if(useBetweenNoise){
-            model = convertToDiagonalNoise(pose3Between->get_noiseModel());
+            model = convertToDiagonalNoise(pose3Between->noiseModel());
           }
 
         const FastVector<Key>& keys = factor->keys();
         Key key1 = keys[0], key2 = keys[1];
-        Matrix M9 = Matrix::Zero(9,9);
+        Matrix M9 = Z_9x9;
         M9.block(0,0,3,3) = Rij;
         M9.block(3,3,3,3) = Rij;
         M9.block(6,6,3,3) = Rij;
 
-        linearGraph.add(key1, -I9, key2, M9, zero9, model);
+        linearGraph.add(key1, -I_9x9, key2, M9, Z_9x1, model);
       }
     // prior on the anchor orientation
     SharedDiagonal priorModel = noiseModel::Unit::Create(9);
-    linearGraph.add(keyAnchor, I9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0).finished(), priorModel);
+    linearGraph.add(keyAnchor, I_9x9, (Vector(9) << 1.0, 0.0, 0.0,/*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0).finished(), priorModel);
     return linearGraph;
   }
 
@@ -210,7 +208,10 @@ namespace distributed_mapper{
     NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(graph);
     // this will also put a prior on the anchor
     GaussianFactorGraph centralizedLinearGraph = buildLinearOrientationGraph(pose3Graph, useBetweenNoise);
+
+
     VectorValues rotEstCentralized = centralizedLinearGraph.optimize();
+
     Values cenRot = InitializePose3::normalizeRelaxedRotations(rotEstCentralized);
     Values initial = pose3WithZeroTranslation(cenRot);
 
@@ -220,14 +221,14 @@ namespace distributed_mapper{
     for(size_t k = 0; k < graph.size(); k++){
         boost::shared_ptr<BetweenFactor<Pose3> > factor =
             boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(graph[k]);
+
         if(factor){
             Key key1 = factor->keys().at(0);
             Key key2 = factor->keys().at(1);
             Pose3 measured = factor->measured();
-
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
               }
             else{
@@ -235,21 +236,19 @@ namespace distributed_mapper{
               }
           }
       }
-
     NonlinearFactorGraph chordalGraphWithoutPrior = cenFG.clone();
-
     // First key
     Key firstKey = KeyVector(initial.keys()).at(0);
     cenFG.add(PriorFactor<Pose3>(firstKey, initial.at<Pose3>(firstKey), priorNoise));
-
     Values estimate = initial;
+
     for(size_t iter=0; iter < 1; iter++){
         GaussianFactorGraph cenGFG = *(cenFG.linearize(estimate));
         VectorValues cenPose_VectorValues = cenGFG.optimize(); // optimize
         estimate = retractPose3Global(estimate, cenPose_VectorValues);
-      }
+    }
 
-    //std::cout << "Centralized Two Stage Error: " << chordalGraphWithoutPrior.error(estimate) << std::endl;
+    std::cout << "Centralized Two Stage Error: " << chordalGraphWithoutPrior.error(estimate) << std::endl;
     return estimate;
 
   }
@@ -285,7 +284,7 @@ namespace distributed_mapper{
             if(useBetweenNoise){
                 // Convert noise model to chordal factor noise
                 Rot3 rotation = cenRot.at<Rot3>(key1);
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel(), rotation.matrix());
                 cenFG.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
               }
             else{
@@ -310,7 +309,7 @@ namespace distributed_mapper{
         chordalGN = retractPose3Global(chordalGN, chordalVectorValues);
       }
 
-    // std::cout << "Centralized Two Stage + GN Error: " << chordalGraphWithoutPrior.error(chordalGN) << std::endl;
+    std::cout << "Centralized Two Stage + GN Error: " << chordalGraphWithoutPrior.error(chordalGN) << std::endl;
 
     return chordalGN;
   }
@@ -325,7 +324,7 @@ namespace distributed_mapper{
     // Extract square root information matrix
     SharedGaussian gaussianNoise = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
     Matrix R = gaussianNoise->R();
-    Matrix C = gtsam::inverse(trans(R)*R); // get covariance from square root information
+    Matrix C = (trans(R)*R).inverse(); // get covariance from square root information
     //gaussianNoise->
 
     // convert rotation to a conservative isotropic noise model
@@ -340,7 +339,7 @@ namespace distributed_mapper{
     CChordal(6,6) = maxC; CChordal(7,7) = maxC; CChordal(8,8) = maxC;
 
     // Translation noise is kept as it is
-    Matrix translation = C.block(3,3,3,3)+ 0.01*gtsam::eye(3,3);
+    Matrix translation = C.block(3,3,3,3)+ 0.01*Matrix::Identity(3,3);
     CChordal.block(9,9,3,3) = Rhat*translation*trans(Rhat);
 
     SharedNoiseModel chordalNoise = noiseModel::Diagonal::Gaussian::Covariance(CChordal);
@@ -354,7 +353,7 @@ namespace distributed_mapper{
     // Extract square root information matrix
     SharedGaussian gaussianNoise = boost::dynamic_pointer_cast<noiseModel::Gaussian>(noise);
     Matrix R = gaussianNoise->R();
-    Matrix C = gtsam::inverse(trans(R)*R); // get covariance from square root information
+    Matrix C = (trans(R)*R).inverse(); // get covariance from square root information
 
     // convert rotation to a conservative isotropic noise model
     double maxC = DBL_MIN;
@@ -363,7 +362,7 @@ namespace distributed_mapper{
           maxC = C(i,i);
       }
 
-    SharedDiagonal chordalNoise = noiseModel::Diagonal::Sigmas(repeat(9, maxC));
+    SharedDiagonal chordalNoise = noiseModel::Diagonal::Sigmas(gtsam::Vector9::Constant(maxC));
     return chordalNoise;
   }
 

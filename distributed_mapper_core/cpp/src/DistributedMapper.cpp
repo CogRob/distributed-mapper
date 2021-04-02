@@ -69,7 +69,7 @@ DistributedMapper::createSubgraphInnerAndSepEdges(const NonlinearFactorGraph& su
 void
 DistributedMapper::loadSubgraphAndCreateSubgraphEdge(GraphAndValues graphAndValues){
   graph_ = *(graphAndValues.first);
-  initial_ = *(graphAndValues.second);    
+  initial_ = *(graphAndValues.second);
 
   // Convert initial values into row major vector values
   linearizedRotation_ = multirobot_util::rowMajorVectorValues(initial_);
@@ -112,7 +112,7 @@ DistributedMapper::estimateRotation(){
 
     Pose3 relativePose = pose3Between->measured();
     Matrix3 R01t = relativePose.rotation().transpose().matrix();
-    Matrix M9 = Matrix::Zero(9,9);
+    Matrix M9 = Z_9x9;
     M9.block(0,0,3,3) = R01t;
     M9.block(3,3,3,3) = R01t;
     M9.block(6,6,3,3) = R01t;
@@ -131,7 +131,7 @@ DistributedMapper::estimateRotation(){
     // if using between noise, use the factor noise model converted to a conservative diagonal estimate
     SharedDiagonal model = rotationNoiseModel_;
     if(useBetweenNoise_){
-        model = multirobot_util::convertToDiagonalNoise(pose3Between->get_noiseModel());
+        model = multirobot_util::convertToDiagonalNoise(pose3Between->noiseModel());
       }
 
     if(robot0 == robotName_){ // robot i owns the first key
@@ -144,7 +144,7 @@ DistributedMapper::estimateRotation(){
       if(!useFlaggedInit_ || neighboringRobotsInitialized_[robot0]){ // if use flagged initialization and robot sharing the edge is already optimized
         Vector r0 = neighborsLinearizedRotations_.at(key0);
         Vector M9_r0 = M9*r0;
-        rotSubgraph.add(key1, I9, M9_r0, model);
+        rotSubgraph.add(key1, I_9x9, M9_r0, model);
       }
     }
     else{
@@ -166,7 +166,7 @@ DistributedMapper::estimateRotation(){
 
     double error = rotSubgraph.error(newLinearizedRotation_);
     rotationErrorTrace_.push_back(error);
-  }  
+  }
 }
 
 //*****************************************************************************
@@ -182,7 +182,7 @@ DistributedMapper::chordalFactorGraph(){
           Pose3 measured = factor->measured();
           if(useBetweenNoise_){
               // Convert noise model to chordal factor noise
-              SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->get_noiseModel());
+              SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(factor->noiseModel());
               //chordalNoise->print("Chordal Noise: \n");
               chordalGraph_.add(BetweenChordalFactor<Pose3>(key1, key2, measured, chordalNoise));
             }
@@ -243,21 +243,21 @@ DistributedMapper::estimatePoses(){
             Vector b = -(M1 * neighborsLinearizedPoses_.at(key1) + error);
             if(useBetweenNoise_){
                 Rot3 rotation = initial_.at<Pose3>(key0).rotation();
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(pose3Between->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(pose3Between->noiseModel(), rotation.matrix());
                 chordalNoise->WhitenSystem(A, b);
               }
             distGFG.add(key0, A, b, poseNoiseModel_);
           }
       }
     else if(robot1 == robotName_){ // robot i owns the second key
-        if(!useFlaggedInit_ || neighboringRobotsInitialized_[robot0]){ // if use flagged initialization and robot sharing the edge is already optimized            
+        if(!useFlaggedInit_ || neighboringRobotsInitialized_[robot0]){ // if use flagged initialization and robot sharing the edge is already optimized
             Vector error = betweenChordalFactor.evaluateError(neighbors_.at<Pose3>(key0), initial_.at<Pose3>(key1), M0, M1);
             // Robot i owns the second key_i, on which we put a prior
             Matrix A = M1;
             Vector b = -(M0 * neighborsLinearizedPoses_.at(key0) + error);
             if(useBetweenNoise_){
                 Rot3 rotation = neighbors_.at<Pose3>(key0).rotation();
-                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(pose3Between->get_noiseModel(), rotation.matrix());
+                SharedNoiseModel chordalNoise = multirobot_util::convertToChordalNoise(pose3Between->noiseModel(), rotation.matrix());
                 chordalNoise->WhitenSystem(A, b);
               }
             distGFG.add(key1, A, b, poseNoiseModel_);

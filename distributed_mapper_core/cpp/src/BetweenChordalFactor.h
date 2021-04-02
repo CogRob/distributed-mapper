@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -69,14 +69,14 @@ namespace gtsam {
     virtual ~BetweenChordalFactor() {}
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenChordalFactor("
           << keyFormatter(this->key1()) << ","
           << keyFormatter(this->key2()) << ")\n";
@@ -85,7 +85,7 @@ namespace gtsam {
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
       const This *e =  dynamic_cast<const This*> (&expected);
       return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
     }
@@ -97,7 +97,7 @@ namespace gtsam {
 
     /** vector of errors */
   Vector evaluateError(const T& pi, const T& pj, boost::optional<Matrix&> Hi =
-      boost::none, boost::optional<Matrix&> Hj = boost::none) const {
+      boost::none, boost::optional<Matrix&> Hj = boost::none) const override {
 
     Matrix3 S1 = skewSymmetric(-1,0,0); //(0 0 0, 0 0 1, 0 -1 0);
     Matrix3 S2 = skewSymmetric(0,-1,0); //sparse([0 0 -1; 0 0 0; 1  0 0]);
@@ -105,14 +105,14 @@ namespace gtsam {
 
     Matrix3 Rij = measured_.rotation().matrix();
     Matrix3 Rijt = Rij.transpose();
-    Vector3 tij = measured_.translation().vector();
+    Vector3 tij = measured_.translation();
 
 
     Matrix3 Ri = pi.rotation().matrix();
-    Vector3 ti = pi.translation().vector();
+    Vector3 ti = pi.translation();
 
     Matrix3 Rj = pj.rotation().matrix();
-    Vector3 tj = pj.translation().vector();
+    Vector3 tj = pj.translation();
 
     Matrix3 Ri_Rij = Ri*Rij;
     Matrix3 error_R = Ri_Rij - Rj;
@@ -131,14 +131,14 @@ namespace gtsam {
       Hi->block(3,0,3,3) = Ri_Rij*S2*Rijt;
       Hi->block(6,0,3,3) = Ri_Rij*S3*Rijt;
       Hi->block(9,0,3,3) = Ri*skewSymmetric(tij);
-      Hi->block(9,3,3,3) = -eye(3); // TODO: define once outside
+      Hi->block(9,3,3,3) = -Matrix::Identity(3, 3); // TODO: define once outside
 
       // fill in Jacobian wrt pj
       *Hj = Matrix::Zero(12,6);
       Hj->block(0,0,3,3) = - Rj*S1;
       Hj->block(3,0,3,3) = - Rj*S2;
       Hj->block(6,0,3,3) = - Rj*S3;
-      Hj->block(9,3,3,3) = eye(3);  // TODO: define once outside
+      Hj->block(9,3,3,3) = Matrix::Identity(3, 3);  // TODO: define once outside
 
     }
 
